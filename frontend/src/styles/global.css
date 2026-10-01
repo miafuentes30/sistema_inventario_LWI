@@ -25,8 +25,26 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
 .mission-line { height:6px; width:88px; border-radius:2px; margin:24px 0; background:var(--yellow); }
 .auth-mission p { margin:0; font-size:clamp(17px,1.5vw,24px); line-height:1.5; }
 .login-form-panel { min-width:0; min-height:100vh; min-height:100dvh; padding:26px clamp(32px,5vw,100px) 24px; display:flex; flex-direction:column; align-items:center; gap:28px; background:#fff; }
-.language-selector { align-self:flex-end; }
-.language-selector select { border:0; background:transparent; color:var(--navy); font-size:14px; padding:8px; cursor:pointer; }
+.language-selector {
+  align-self:flex-end; display:flex; align-items:center; gap:12px; color:var(--navy);
+}
+.language-icon { color:var(--blue); }
+.language-label { font-size:12px; font-weight:700; color:var(--muted); }
+.language-options {
+  display:flex; align-items:center; gap:3px; padding:4px;
+  border:1px solid #e7edf3; border-radius:999px; background:#f3f7fa;
+  box-shadow:0 3px 12px rgba(0,29,57,.06);
+}
+.language-option {
+  display:flex; align-items:center; gap:7px; min-height:36px; padding:0 11px;
+  border:0; border-radius:999px; background:transparent; color:var(--muted);
+  font-size:12px; font-weight:600; transition:background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.language-option:hover:not(.is-active) { background:#e8eff5; color:var(--navy); }
+.language-option.is-active { background:#fff; color:var(--navy); box-shadow:0 2px 7px rgba(0,29,57,.12); }
+.language-option:focus-visible { outline:3px solid var(--blue); outline-offset:2px; }
+.language-code { font-size:10px; font-weight:800; letter-spacing:.04em; color:var(--blue); }
+.language-option.is-active .language-code { color:var(--blue); }
 .login-form-container { width:100%; max-width:500px; margin:auto 0; padding:16px 0; }
 .login-header { margin-bottom:32px; }
 .login-header h1 { font-size:clamp(36px,3vw,52px); line-height:1.12; letter-spacing:-1.2px; margin:0 0 12px; color:var(--text); }
@@ -87,6 +105,10 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
   .login-header h1 { font-size:36px; }
   .login-header .recovery-title { font-size:30px; }
   .login-header p { font-size:16px; }
+  .language-selector { gap:8px; }
+  .language-label { font-size:11px; }
+  .language-options { gap:2px; padding:3px; }
+  .language-option { gap:5px; min-height:34px; padding:0 8px; font-size:11px; }
 }
 @media(max-width:359px) {
   .auth-visual-content { flex-direction:column; }

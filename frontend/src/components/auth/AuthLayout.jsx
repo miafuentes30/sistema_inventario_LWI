@@ -1,4 +1,4 @@
-import { Shield } from "lucide-react";
+import { Globe2, Shield } from "lucide-react";
 import AuthVisual from "./AuthVisual";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -9,11 +9,16 @@ export default function AuthLayout({ children, variant = "login" }) {
       <AuthVisual variant={variant} />
       <section className="login-form-panel">
         <div className="language-selector">
-          <label htmlFor="auth-language" className="sr-only">{t("language")}</label>
-          <select id="auth-language" value={language} onChange={event => setLanguage(event.target.value)}>
-            <option value="es">{t("spanish")}</option>
-            <option value="en">{t("english")}</option>
-          </select>
+          <Globe2 className="language-icon" size={20} aria-hidden="true" />
+          <span className="language-label">{t("language")}</span>
+          <div className="language-options" role="group" aria-label={t("language")}>
+            <button type="button" className={language === "es" ? "language-option is-active" : "language-option"} onClick={() => setLanguage("es")} aria-label={t("spanish")} aria-pressed={language === "es"}>
+              <span className="language-code" aria-hidden="true">ES</span>{t("spanish")}
+            </button>
+            <button type="button" className={language === "en" ? "language-option is-active" : "language-option"} onClick={() => setLanguage("en")} aria-label={t("english")} aria-pressed={language === "en"}>
+              <span className="language-code" aria-hidden="true">EN</span>{t("english")}
+            </button>
+          </div>
         </div>
         <div className="login-form-container">
           {children}
