@@ -25,6 +25,8 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
 .mission-line { height:6px; width:88px; border-radius:2px; margin:24px 0; background:var(--yellow); }
 .auth-mission p { margin:0; font-size:clamp(17px,1.5vw,24px); line-height:1.5; }
 .login-form-panel { min-width:0; min-height:100vh; min-height:100dvh; padding:26px clamp(32px,5vw,100px) 24px; display:flex; flex-direction:column; align-items:center; gap:28px; background:#fff; }
+.login-page.recovery-page { grid-template-columns:minmax(280px,32fr) minmax(0,68fr); }
+.recovery-panel { position:relative; overflow:hidden; background:radial-gradient(ellipse at 75% 100%,rgba(211,229,250,.52),transparent 37%),radial-gradient(ellipse at 98% 86%,rgba(225,237,252,.8),transparent 27%),#f9fbfe; }
 .language-selector {
   align-self:flex-end; display:flex; align-items:center; gap:12px; color:var(--navy);
 }
@@ -72,6 +74,28 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
 .login-footer { width:100%; text-align:center; font-size:12px; color:var(--muted); }
 .login-footer p { margin:4px 0; }
 .back-link { display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:28px; }
+.recovery-panel .login-form-container { max-width:560px; }
+.recovery-card { padding:28px 30px; border:1px solid #edf1f7; border-radius:8px; background:rgba(255,255,255,.94); box-shadow:0 10px 34px rgba(23,61,103,.07); }
+.recovery-lock-icon { display:grid; place-items:center; width:76px; height:76px; margin:0 auto 18px; border-radius:50%; background:#e9f1ff; color:#243db5; }
+.recovery-card .login-header { margin:0 0 24px; text-align:center; }
+.recovery-card .login-header .recovery-title { margin-bottom:8px; font-size:clamp(28px,2.3vw,36px); letter-spacing:-.8px; }
+.recovery-card .login-header p { font-size:15px; line-height:1.5; }
+.recovery-email-label { display:block; margin:0 0 8px; color:var(--text); font-size:13px; font-weight:700; }
+.recovery-email-label span { color:#dc2626; }
+.recovery-card .input-container { height:50px; margin-bottom:18px; border-radius:6px; background:#fff; }
+.recovery-card .input-container input { font-size:14px; }
+.recovery-card .login-submit { position:relative; gap:10px; min-height:50px; border-radius:6px; font-size:14px; }
+.recovery-submit-arrow { margin-left:auto; }
+.recovery-card .login-submit > svg:first-child { margin-right:2px; }
+.recovery-divider { display:flex; align-items:center; gap:14px; margin:22px 0 18px; color:var(--muted); font-size:12px; }
+.recovery-divider::before,.recovery-divider::after { content:""; flex:1; height:1px; background:#e8edf3; }
+.recovery-back-link { display:block; margin-bottom:24px; text-align:center; font-size:13px; font-weight:600; }
+.recovery-note { display:flex; align-items:flex-start; gap:12px; padding:14px; border-radius:6px; background:#eaf3ff; color:var(--navy); }
+.recovery-note > svg { flex-shrink:0; color:#3476cc; }
+.recovery-note strong { display:block; margin:0 0 4px; font-size:12px; }
+.recovery-note p { margin:0; color:#475467; font-size:12px; line-height:1.5; }
+.recovery-footer { z-index:1; margin-top:auto; padding-top:8px; text-align:left; }
+.recovery-footer p { font-size:11px; }
 @media(min-width:821px) and (max-height:800px) {
   .auth-visual-content { padding:32px clamp(28px,4vw,64px); gap:36px; }
   .auth-brand img { width:76px; }
@@ -94,6 +118,9 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
   .auth-mission p { font-size:14px; }
   .login-form-panel { min-height:auto; padding:20px 32px 28px; gap:22px; }
   .login-form-container { padding:12px 0; }
+  .login-page.recovery-page { grid-template-columns:minmax(0,1fr); }
+  .recovery-panel { min-height:100vh; min-height:100dvh; }
+  .recovery-panel .login-form-container { margin:18px 0; }
 }
 @media(max-width:480px) {
   .auth-visual-content { padding:28px 24px; gap:24px; }
@@ -109,6 +136,9 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
   .language-label { font-size:11px; }
   .language-options { gap:2px; padding:3px; }
   .language-option { gap:5px; min-height:34px; padding:0 8px; font-size:11px; }
+  .recovery-card { padding:24px 18px; }
+  .recovery-card .login-header .recovery-title { font-size:28px; }
+  .recovery-panel { padding-inline:18px; }
 }
 @media(max-width:359px) {
   .auth-visual-content { flex-direction:column; }
@@ -290,7 +320,12 @@ button:focus-visible,a:focus-visible,select:focus-visible { outline:3px solid va
   display:flex; flex-direction:column; justify-content:space-between;
   width:100%; padding:0;
 }
-.recovery-quote { position:absolute; top:4.4%; left:13%; right:10%; }
+.recovery-visual-brand { position:absolute; top:10%; left:13%; right:8%; display:flex; align-items:center; gap:12px; }
+.recovery-visual-brand img { width:58px; height:auto; }
+.recovery-visual-brand div { display:flex; flex-direction:column; gap:4px; }
+.recovery-visual-brand strong { font-size:clamp(15px,1.45vw,22px); letter-spacing:.01em; }
+.recovery-visual-brand span { font-size:clamp(14px,1.35vw,20px); }
+.recovery-quote { position:absolute; top:30%; left:13%; right:10%; }
 .recovery-quote .mission-line { width:56px; height:6px; margin:0 0 34px; border-radius:4px; }
 .recovery-quote h2 { margin:0; font-size:clamp(24px,2vw,36px); line-height:1.32; font-weight:400; font-style:italic; }
 .recovery-quote h2 span { display:block; }

@@ -4,10 +4,11 @@ import { useLanguage } from "../../context/LanguageContext";
 
 export default function AuthLayout({ children, variant = "login" }) {
   const { language, setLanguage, t } = useLanguage();
+  const isRecovery = variant === "recovery";
   return (
-    <main className="login-page">
+    <main className={`login-page${isRecovery ? " recovery-page" : ""}`}>
       <AuthVisual variant={variant} />
-      <section className="login-form-panel">
+      <section className={`login-form-panel${isRecovery ? " recovery-panel" : ""}`}>
         <div className="language-selector">
           <Globe2 className="language-icon" size={20} aria-hidden="true" />
           <span className="language-label">{t("language")}</span>
@@ -22,10 +23,12 @@ export default function AuthLayout({ children, variant = "login" }) {
         </div>
         <div className="login-form-container">
           {children}
-          <div className="login-divider"><span>{t("or")}</span></div>
-          <div className="restricted-access"><Shield size={24} aria-hidden="true" /><div><strong>{t("restricted")}</strong><p>{t("restrictedText")}</p></div></div>
+          {!isRecovery && <>
+            <div className="login-divider"><span>{t("or")}</span></div>
+            <div className="restricted-access"><Shield size={24} aria-hidden="true" /><div><strong>{t("restricted")}</strong><p>{t("restrictedText")}</p></div></div>
+          </>}
         </div>
-        <footer className="login-footer"><p>Living Water Guatemala</p><p>{t("updated")}</p></footer>
+        <footer className={`login-footer${isRecovery ? " recovery-footer" : ""}`}><p>{isRecovery ? t("footerRights") : "Living Water Guatemala"}</p>{!isRecovery && <p>{t("updated")}</p>}</footer>
       </section>
     </main>
   );

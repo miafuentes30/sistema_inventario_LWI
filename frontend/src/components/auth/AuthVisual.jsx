@@ -15,6 +15,7 @@ export default function AuthVisual({ variant = "login" }) {
     >
       <div className="auth-visual-overlay" aria-hidden="true" />
       {variant === "recovery" ? <div className="recovery-visual-content">
+        <div className="recovery-visual-brand"><img src={logo} alt="" /><div><strong>LIVING WATER</strong><span>Guatemala</span></div></div>
         <div className="recovery-quote">
           <div className="mission-line" aria-hidden="true" />
           <h2>{t("recoveryMissionLines").map(line => <span key={line}>{line}</span>)}</h2>
