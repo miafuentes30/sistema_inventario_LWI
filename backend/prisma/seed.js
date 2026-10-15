@@ -12,6 +12,10 @@ const roles = [
 ];
 
 async function main() {
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password || password.length < 12) {
+    throw new Error("Configura SEED_ADMIN_PASSWORD con al menos 12 caracteres antes de ejecutar el seed.");
+  }
   for (const [nombre, descripcion] of roles) {
     await prisma.rol.upsert({
       where: { nombre },
@@ -31,7 +35,6 @@ async function main() {
   if (!/^[^\s@]+@water\.cc$/.test(correo)) {
     throw new Error("SEED_ADMIN_EMAIL debe pertenecer al dominio @water.cc.");
   }
-  const password = process.env.SEED_ADMIN_PASSWORD || "Cambiar123*";
   const rounds = Number(process.env.BCRYPT_ROUNDS || 12);
 
   if (!Number.isInteger(rounds) || rounds < 10 || rounds > 15) {
@@ -43,13 +46,7 @@ async function main() {
 
   const usuario = await prisma.usuario.upsert({
     where: { correo },
-    update: {
-      nombre,
-      passwordHash,
-      rolId: rolAdministrador.id,
-      activo: true,
-      updatedAt: now
-    },
+    update: {},
     create: {
       nombre,
       correo,

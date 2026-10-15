@@ -5,8 +5,8 @@ const loginSchema = z.object({
     .string()
     .trim()
     .email("El correo electrónico no es válido.")
-    .refine((value) => value.toLowerCase().endsWith("@water.cc"), "Utiliza tu correo institucional @water.cc.")
     .max(180)
+    .refine((value) => value.toLowerCase().endsWith("@water.cc"), "Utiliza tu correo institucional @water.cc.")
     .transform((value) => value.toLowerCase()),
   contrasena: z
     .string()
