@@ -17,6 +17,17 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      {["/usuarios", "/configuracion", "/perfil"].map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+      ))}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

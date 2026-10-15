@@ -12,26 +12,33 @@ app.use(helmet());
 app.use(
   cors({
     origin: env.FRONTEND_URL,
-    credentials: true
-  })
+    credentials: true,
+  }),
 );
 app.use(express.json({ limit: "10kb" }));
 
 app.get("/api/health", (_req, res) => {
   return res.status(200).json({
     success: true,
-    message: "Backend del Sistema de Inventario funcionando correctamente."
+    message: "Backend del Sistema de Inventario funcionando correctamente.",
   });
 });
 
 app.use("/api/auth", authRouter);
-app.use("/api/configuracion", require("./modules/settings/settings.routes").settingsRouter);
 app.use("/api/usuarios", require("./modules/users/users.routes").usersRouter);
+app.use(
+  "/api/perfil",
+  require("./modules/profile/profile.routes").profileRouter,
+);
+app.use(
+  "/api/configuracion",
+  require("./modules/settings/settings.routes").settingsRouter,
+);
 
 app.use((_req, res) => {
   return res.status(404).json({
     success: false,
-    message: "Ruta no encontrada."
+    message: "Ruta no encontrada.",
   });
 });
 
