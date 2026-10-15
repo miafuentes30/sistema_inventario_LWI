@@ -1,22 +1,17 @@
 const { z } = require("zod");
 
-const correoInstitucional = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .email("Ingresa un correo electrónico válido.")
-  .refine(
-    (correo) => correo.endsWith("@water.cc"),
-    "Debes utilizar un correo institucional @water.cc."
-  );
-
 const loginSchema = z.object({
-  correo: correoInstitucional,
+  correo: z
+    .string()
+    .trim()
+    .email("El correo electrónico no es válido.")
+    .refine((value) => value.toLowerCase().endsWith("@water.cc"), "Utiliza tu correo institucional @water.cc.")
+    .max(180)
+    .transform((value) => value.toLowerCase()),
   contrasena: z
     .string()
-    .min(1, "La contraseña es obligatoria."),
+    .min(1, "La contraseña es requerida.")
+    .max(255, "La contraseña es demasiado larga.")
 });
 
-module.exports = {
-  loginSchema,
-};
+module.exports = { loginSchema };
