@@ -8,12 +8,16 @@ const CREDENCIALES_INVALIDAS = "Correo o contraseña incorrectos.";
 
 async function login(input) {
   if (!input.correo.endsWith("@water.cc")) {
-    throw new AppError(400, "Utiliza tu correo institucional @water.cc.", "INVALID_DOMAIN");
+    throw new AppError(
+      400,
+      "Utiliza tu correo institucional @water.cc.",
+      "INVALID_DOMAIN",
+    );
   }
 
   const usuario = await prisma.usuario.findUnique({
     where: { correo: input.correo },
-    include: { rol: true }
+    include: { rol: true },
   });
 
   if (!usuario || !usuario.activo || !usuario.rol.activo) {
@@ -22,7 +26,7 @@ async function login(input) {
 
   const passwordValido = await bcrypt.compare(
     input.contrasena,
-    usuario.passwordHash
+    usuario.passwordHash,
   );
 
   if (!passwordValido) {
@@ -35,18 +39,21 @@ async function login(input) {
     where: { id: usuario.id },
     data: {
       ultimoAcceso: now,
-      updatedAt: now
-    }
+      updatedAt: now,
+    },
   });
 
   const token = jwt.sign(
     {
+      cv: require("../../middleware/auth.middleware").credentialVersion(
+        usuario.passwordHash,
+      ),
       sub: usuario.id.toString(),
       correo: usuario.correo,
-      rol: usuario.rol.nombre
+      rol: usuario.rol.nombre,
     },
     env.JWT_SECRET,
-    { expiresIn: env.JWT_EXPIRES_IN }
+    { expiresIn: env.JWT_EXPIRES_IN },
   );
 
   return {
@@ -58,9 +65,9 @@ async function login(input) {
       correo: usuario.correo,
       rol: {
         id: usuario.rol.id.toString(),
-        nombre: usuario.rol.nombre
-      }
-    }
+        nombre: usuario.rol.nombre,
+      },
+    },
   };
 }
 
