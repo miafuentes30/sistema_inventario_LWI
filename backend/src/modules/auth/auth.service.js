@@ -7,6 +7,10 @@ const { AppError } = require("../../middleware/app-error");
 const CREDENCIALES_INVALIDAS = "Correo o contraseña incorrectos.";
 
 async function login(input) {
+  if (!input.correo.endsWith("@water.cc")) {
+    throw new AppError(400, "Utiliza tu correo institucional @water.cc.", "INVALID_DOMAIN");
+  }
+
   const usuario = await prisma.usuario.findUnique({
     where: { correo: input.correo },
     include: { rol: true }

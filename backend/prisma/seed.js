@@ -25,9 +25,12 @@ async function main() {
   });
 
   const nombre = process.env.SEED_ADMIN_NAME?.trim() || "Administrador LWI";
-  const correo = (process.env.SEED_ADMIN_EMAIL || "admin@lwi.local")
+  const correo = (process.env.SEED_ADMIN_EMAIL || "admin@water.cc")
     .trim()
     .toLowerCase();
+  if (!/^[^\s@]+@water\.cc$/.test(correo)) {
+    throw new Error("SEED_ADMIN_EMAIL debe pertenecer al dominio @water.cc.");
+  }
   const password = process.env.SEED_ADMIN_PASSWORD || "Cambiar123*";
   const rounds = Number(process.env.BCRYPT_ROUNDS || 12);
 
