@@ -33,9 +33,10 @@ VALUES
 ('Compras', 'Usuario encargado de procesos de compras'),
 ('Finanzas', 'Usuario del área financiera');
 
-
+-- ========================================================================================
 -- SISTEMA DE INVENTARIOS LWI - Continuación de la fase 1
 -- Ejecutar en la base 'sistema_inventario' desde DBeaver o cualquier orquestador de db 
+-- ========================================================================================
 
 BEGIN;
 
@@ -285,9 +286,9 @@ COMMIT;
 
 
 
-
+-- =========================================================================
 -- LWI GUATEMALA PARTE 2
-
+-- =========================================================================
 BEGIN;
 
 DO $$
@@ -433,3 +434,5 @@ COMMENT ON TABLE public.devoluciones_lote IS 'Reincorporacion de unidades consum
 COMMENT ON COLUMN public.movimiento_detalles.costo_unitario IS 'Obligatorio al confirmar entradas y ajustes de entrada; no inventar costos historicos';
 
 COMMIT;
+
+
