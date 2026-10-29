@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { frenchAuth, frenchCopy } from "./frenchTranslations";
 import { sprintTranslations } from "./sprintTranslations";
 
 const translations = {
+  fr: frenchAuth,
   es: {
     language: "Idioma", spanish: "Español", english: "Inglés", welcome: "Bienvenido", system: "Sistema de Inventario",
     recoveryMissionLines: ["“Agua,", "para la vida,", "en el nombre", "de Jesús.”"], impact: "Impacto",
@@ -62,7 +64,18 @@ export function LanguageProvider({ children }) {
     document.documentElement.lang = language;
     try { localStorage.setItem("lwi_language", language); } catch { /* Language works without storage. */ }
   }, [language]);
-  return <LanguageContext.Provider value={{ language, setLanguage, t: key => sprintTranslations[language]?.[key] ?? translations[language]?.[key] ?? translations.es[key] ?? key }}>{children}</LanguageContext.Provider>;
+  const copy = (es, en) => {
+    if (language !== "fr") return language === "en" ? en : es;
+    const translate = value => {
+      if (Array.isArray(value)) return value.map(translate);
+      if (typeof value !== "string") return value;
+      const pagination = /^Showing (\d+) to (\d+) of (\d+) users$/.exec(value);
+      if (pagination) return `Affichage de ${pagination[1]} \u00e0 ${pagination[2]} sur ${pagination[3]} utilisateurs`;
+      return frenchCopy[value] ?? value;
+    };
+    return translate(en);
+  };
+  return <LanguageContext.Provider value={{ language, setLanguage, copy, t: key => sprintTranslations[language]?.[key] ?? translations[language]?.[key] ?? translations.es[key] ?? key }}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {

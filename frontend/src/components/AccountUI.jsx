@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 export function useCopy() {
-  const { language } = useLanguage();
-  return (es, en) => (language === "en" ? en : es);
+  const { copy } = useLanguage();
+  return copy;
 }
 export function Notice({ error, success }) {
   const c = useCopy();
@@ -81,7 +81,7 @@ export function Modal({ title, children, onClose, busy = false }) {
 }
 export function date(value, language) {
   return value
-    ? new Intl.DateTimeFormat(language === "en" ? "en-US" : "es-GT", {
+    ? new Intl.DateTimeFormat(language === "fr" ? "fr-FR" : language === "en" ? "en-US" : "es-GT", {
         timeZone: "America/Guatemala",
         dateStyle: "short",
         timeStyle: "short",

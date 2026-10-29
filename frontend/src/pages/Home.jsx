@@ -1,3 +1,4 @@
+import { useCopy } from "../components/AccountUI";
 import Catalog from "./Catalog";
 import ProductDetail from "./ProductDetail";
 import SystemSearch from "../components/SystemSearch";
@@ -7,92 +8,108 @@ import UsersPage from "./Users";
 import Profile from "./Profile";
 import SettingsPage from "./Settings";
 import { useEffect, useRef, useState } from "react";
-import {
-  Activity,
-  ArrowRight,
-  ArrowUpFromLine,
-  BarChart3,
-  Bell,
-  Box,
-  ChevronDown,
-  CircleOff,
-  FileBarChart2,
-  Home as HomeIcon,
-  LogOut,
-  Menu,
-  Package,
-  Plus,
-  RotateCcw,
-  Settings,
-  TriangleAlert,
-  Users,
-  X,
-} from "lucide-react";
+import { Activity, ArrowRight, ArrowUpFromLine, BarChart3, Bell, Box, ChevronDown, CircleOff, FileBarChart2, Home as HomeIcon, LogOut, Menu, Package, Plus, RotateCcw, Settings, TriangleAlert, Users, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import logo from "../assets/images/living-water-logo.png";
 import banner from "../assets/images/dashboard-landscape.svg";
-
-const items = [
-  { key: "home", es: "Inicio", en: "Home", icon: HomeIcon },
-  { key: "inventory", es: "Inventario", en: "Inventory", fr: "Inventaire", icon: Package },
-  { key: "suppliers", es: "Proveedores", en: "Suppliers", fr: "Fournisseurs", icon: Users },
-  { key: "entries", es: "Entradas", en: "Entries", icon: Plus },
-  { key: "exits", es: "Salidas", en: "Exits", icon: ArrowUpFromLine },
-  { key: "returns", es: "Devoluciones", en: "Returns", icon: RotateCcw },
-  { key: "movements", es: "Movimientos", en: "Movements", icon: Activity },
-  { key: "reports", es: "Reportes", en: "Reports", icon: FileBarChart2 },
-  { key: "users", es: "Usuarios", en: "Users", icon: Users },
-  { key: "settings", es: "Configuración", en: "Settings", icon: Settings },
-];
-const quick = [
-  {
-    key: "inventory",
-    es: "Nuevo producto",
-    en: "New product",
-    icon: Box,
-    tone: "blue",
-  },
-  {
-    key: "entries",
-    es: "Registrar entrada",
-    en: "Register entry",
-    icon: Plus,
-    tone: "green",
-  },
-  {
-    key: "exits",
-    es: "Registrar salida",
-    en: "Register exit",
-    icon: LogOut,
-    tone: "red",
-  },
-  {
-    key: "returns",
-    es: "Registrar devolución",
-    en: "Register return",
-    icon: RotateCcw,
-    tone: "yellow",
-  },
-  {
-    key: "movements",
-    es: "Ver movimientos",
-    en: "View movements",
-    icon: Activity,
-    tone: "purple",
-  },
-  {
-    key: "reports",
-    es: "Generar reporte",
-    en: "Generate report",
-    icon: BarChart3,
-    tone: "slate",
-  },
-];
+const items = [{
+  key: "home",
+  es: "Inicio",
+  en: "Home",
+  icon: HomeIcon
+}, {
+  key: "inventory",
+  es: "Inventario",
+  en: "Inventory",
+  fr: "Inventaire",
+  icon: Package
+}, {
+  key: "suppliers",
+  es: "Proveedores",
+  en: "Suppliers",
+  fr: "Fournisseurs",
+  icon: Users
+}, {
+  key: "entries",
+  es: "Entradas",
+  en: "Entries",
+  icon: Plus
+}, {
+  key: "exits",
+  es: "Salidas",
+  en: "Exits",
+  icon: ArrowUpFromLine
+}, {
+  key: "returns",
+  es: "Devoluciones",
+  en: "Returns",
+  icon: RotateCcw
+}, {
+  key: "movements",
+  es: "Movimientos",
+  en: "Movements",
+  icon: Activity
+}, {
+  key: "reports",
+  es: "Reportes",
+  en: "Reports",
+  icon: FileBarChart2
+}, {
+  key: "users",
+  es: "Usuarios",
+  en: "Users",
+  icon: Users
+}, {
+  key: "settings",
+  es: "Configuración",
+  en: "Settings",
+  icon: Settings
+}];
+const quick = [{
+  key: "inventory",
+  es: "Nuevo producto",
+  en: "New product",
+  icon: Box,
+  tone: "blue"
+}, {
+  key: "entries",
+  es: "Registrar entrada",
+  en: "Register entry",
+  icon: Plus,
+  tone: "green"
+}, {
+  key: "exits",
+  es: "Registrar salida",
+  en: "Register exit",
+  icon: LogOut,
+  tone: "red"
+}, {
+  key: "returns",
+  es: "Registrar devolución",
+  en: "Register return",
+  icon: RotateCcw,
+  tone: "yellow"
+}, {
+  key: "movements",
+  es: "Ver movimientos",
+  en: "View movements",
+  icon: Activity,
+  tone: "purple"
+}, {
+  key: "reports",
+  es: "Generar reporte",
+  en: "Generate report",
+  icon: BarChart3,
+  tone: "slate"
+}];
 export default function Home() {
-  const { usuario, logout } = useAuth();
-  const { language, t: translate } = useLanguage();
-  const es = language !== "en";
+  const {
+    usuario,
+    logout
+  } = useAuth();
+  const { language } = useLanguage();
+  const c = useCopy();
   const location = useLocation();
   const routerNavigate = useNavigate();
   const [localSelected, setSelected] = useState("home");
@@ -101,13 +118,11 @@ export default function Home() {
     "/proveedores": "suppliers",
     "/usuarios": "users",
     "/configuracion": "settings",
-    "/perfil": "profile",
+    "/perfil": "profile"
   };
   const selected = location.pathname.startsWith("/inventario/") ? "productDetail" : pathKeys[location.pathname] || localSelected;
   const admin = usuario?.rol?.nombre === "Administrador";
-  const visibleItems = items.filter(
-    (i) => admin || !["users", "settings"].includes(i.key),
-  );
+  const visibleItems = items.filter(i => admin || !["users", "settings"].includes(i.key));
   const profileRef = useRef(null);
   const profileButton = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -118,7 +133,7 @@ export default function Home() {
     if (!mobileOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const escape = (event) => {
+    const escape = event => {
       if (event.key === "Escape") setMobileOpen(false);
     };
     const resize = () => {
@@ -134,10 +149,10 @@ export default function Home() {
   }, [mobileOpen]);
   useEffect(() => {
     if (!profileOpen) return;
-    const outside = (event) => {
+    const outside = event => {
       if (!profileRef.current?.contains(event.target)) setProfileOpen(false);
     };
-    const escape = (event) => {
+    const escape = event => {
       if (event.key === "Escape") {
         setProfileOpen(false);
         profileButton.current?.focus();
@@ -153,30 +168,20 @@ export default function Home() {
   useEffect(() => {
     setProfileOpen(false);
   }, [location.pathname]);
-  const t = (obj) => language === "fr" && ["inventory", "suppliers"].includes(obj.key) ? translate(obj.es === "Nuevo producto" ? "newProduct" : obj.key) : (es ? obj.es : obj.en);
-  const selectedItem = items.find((i) => i.key === selected) || items[0];
-  const displayName = usuario?.nombre?.trim() || (es ? "Usuario" : "User");
+  const t = obj => c(obj.es, obj.en);
+  const selectedItem = items.find(i => i.key === selected) || items[0];
+  const displayName = usuario?.nombre?.trim() || c("Usuario", "User");
   const firstName = displayName.split(/\s+/)[0];
   const hour = new Date().getHours();
-  const greeting = es
-    ? hour < 12
-      ? "¡Buenos días"
-      : hour < 19
-        ? "¡Buenas tardes"
-        : "¡Buenas noches"
-    : hour < 12
-      ? "Good morning"
-      : hour < 19
-        ? "Good afternoon"
-        : "Good evening";
-  const navigate = (key) => {
+  const greeting = c(hour < 12 ? "¡Buenos días" : hour < 19 ? "¡Buenas tardes" : "¡Buenas noches", hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening");
+  const navigate = key => {
     const routes = {
       inventory: "/inventario",
       suppliers: "/proveedores",
       users: "/usuarios",
       settings: "/configuracion",
       profile: "/perfil",
-      password: "/perfil#contrasena",
+      password: "/perfil#contrasena"
     };
     setSelected(routes[key] ? "home" : key);
     routerNavigate(routes[key] || "/");
@@ -184,53 +189,41 @@ export default function Home() {
     setProfileOpen(false);
     setSearch("");
   };
-  const cards = [
-    {
-      es: "Productos totales",
-      en: "Total products",
-      icon: Box,
-      tone: "blue",
-      key: "inventory",
-      linkEs: "Ver inventario",
-      linkEn: "View inventory",
-    },
-    {
-      es: "Productos en stock",
-      en: "Products in stock",
-      icon: Package,
-      tone: "green",
-      key: "inventory",
-      linkEs: "Ver stock",
-      linkEn: "View stock",
-    },
-    {
-      es: "Productos con stock bajo",
-      en: "Low-stock products",
-      icon: TriangleAlert,
-      tone: "yellow",
-      key: "inventory",
-      linkEs: "Ver detalles",
-      linkEn: "View details",
-    },
-    {
-      es: "Productos agotados",
-      en: "Out-of-stock products",
-      icon: CircleOff,
-      tone: "red",
-      key: "inventory",
-      linkEs: "Ver detalles",
-      linkEn: "View details",
-    },
-  ];
-  return (
-    <div className={`lw-app ${collapsed ? "lw-collapsed" : ""}`}>
-      {mobileOpen && (
-        <button
-          className="lw-overlay"
-          aria-label="Cerrar menú"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+  const cards = [{
+    es: "Productos totales",
+    en: "Total products",
+    icon: Box,
+    tone: "blue",
+    key: "inventory",
+    linkEs: "Ver inventario",
+    linkEn: "View inventory"
+  }, {
+    es: "Productos en stock",
+    en: "Products in stock",
+    icon: Package,
+    tone: "green",
+    key: "inventory",
+    linkEs: "Ver stock",
+    linkEn: "View stock"
+  }, {
+    es: "Productos con stock bajo",
+    en: "Low-stock products",
+    icon: TriangleAlert,
+    tone: "yellow",
+    key: "inventory",
+    linkEs: "Ver detalles",
+    linkEn: "View details"
+  }, {
+    es: "Productos agotados",
+    en: "Out-of-stock products",
+    icon: CircleOff,
+    tone: "red",
+    key: "inventory",
+    linkEs: "Ver detalles",
+    linkEn: "View details"
+  }];
+  return <div className={`lw-app ${collapsed ? "lw-collapsed" : ""}`}>
+      {mobileOpen && <button className="lw-overlay" aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />}
       <aside className={`lw-sidebar ${mobileOpen ? "lw-sidebar-open" : ""}`}>
         <div className="lw-brand">
           <img src={logo} alt="Living Water International" />
@@ -238,107 +231,63 @@ export default function Home() {
             <strong>LIVING WATER</strong>
             <span>Guatemala</span>
           </div>
-          <button
-            className="lw-close-menu"
-            aria-label="Cerrar menú"
-            onClick={() => setMobileOpen(false)}
-          >
+          <button className="lw-close-menu" aria-label="Cerrar menú" onClick={() => setMobileOpen(false)}>
             <X size={19} />
           </button>
         </div>
-        <nav
-          className="lw-nav"
-          aria-label={es ? "Menú principal" : "Main menu"}
-        >
-          {visibleItems.map((i) => (
-            <button
-              key={i.key}
-              type="button"
-              className={`lw-nav-item ${selected === i.key ? "active" : ""}`}
-              onClick={() => navigate(i.key)}
-              title={t(i)}
-            >
+        <nav className="lw-nav" aria-label={c("Menú principal", "Main menu")}>
+          {visibleItems.map(i => <button key={i.key} type="button" className={`lw-nav-item ${selected === i.key ? "active" : ""}`} onClick={() => navigate(i.key)} title={t(i)}>
               <i.icon size={21} strokeWidth={2.4} />
               <span>{t(i)}</span>
-            </button>
-          ))}
+            </button>)}
         </nav>
         <div className="lw-sidebar-end">
           <div className="lw-quote">
             “
-            {es
-              ? "Agua,\npara la vida,\nen el nombre\nde Jesús."
-              : "Water,\nfor life,\nin Jesus’ name."}
+            {c("Agua,\npara la vida,\nen el nombre\nde Jesús.", "Water,\nfor life,\nin Jesus’ name.")}
             ”<span />
           </div>
           <p>
             Living Water Guatemala
             <br />
-            <small>{es ? "Dirección de Informática" : "IT Department"}</small>
+            <small>{c("Dirección de Informática", "IT Department")}</small>
           </p>
         </div>
       </aside>
       <div className="lw-main">
         <header className="lw-topbar">
           <div className="lw-top-left">
-            <button
-              className="lw-menu-btn"
-              aria-label={es ? "Abrir menú" : "Open menu"}
-              onClick={() => {
-                if (window.innerWidth <= 820) setMobileOpen(true);
-                else setCollapsed((v) => !v);
-              }}
-            >
+            <button className="lw-menu-btn" aria-label={c("Abrir menú", "Open menu")} onClick={() => {
+            if (window.innerWidth <= 820) setMobileOpen(true);else setCollapsed(v => !v);
+          }}>
               <Menu size={25} />
             </button>
-            <SystemSearch
-              items={visibleItems}
-              language={language}
-              value={search}
-              onChange={setSearch}
-              onNavigate={navigate}
-            />
+            <SystemSearch items={visibleItems} language={language} value={search} onChange={setSearch} onNavigate={navigate} />
           </div>
           <div className="lw-top-actions">
-            <button
-              className="lw-bell"
-              title={
-                es
-                  ? "Notificaciones: pendientes de integración"
-                  : "Notifications: pending integration"
-              }
-              aria-label={es ? "Notificaciones" : "Notifications"}
-            >
+            <button className="lw-bell" title={c("Notificaciones: pendientes de integración", "Notifications: pending integration")} aria-label={c("Notificaciones", "Notifications")}>
               <Bell size={24} />
               <span />
             </button>
             <div className="lw-profile-wrap" ref={profileRef}>
-              <button
-                ref={profileButton}
-                className="lw-user-btn"
-                aria-controls="profile-menu"
-                aria-label={`${displayName}: ${es ? "menú de perfil" : "profile menu"}`}
-                onClick={() => setProfileOpen((v) => !v)}
-                aria-expanded={profileOpen}
-              >
+              <button ref={profileButton} className="lw-user-btn" aria-controls="profile-menu" aria-label={`${displayName}: ${c("menú de perfil", "profile menu")}`} onClick={() => setProfileOpen(v => !v)} aria-expanded={profileOpen}>
                 <span className="lw-avatar">
                   {displayName.charAt(0).toUpperCase()}
                 </span>
                 <span className="lw-user-copy">
                   <strong>{firstName}</strong>
-                  <small>{usuario?.rol?.nombre}</small>
+                  <small>{c(usuario?.rol?.nombre, usuario?.rol?.nombre === "Administrador" ? "Administrator" : usuario?.rol?.nombre === "Operador" ? "Operator" : usuario?.rol?.nombre)}</small>
                 </span>
                 <ChevronDown size={18} />
               </button>
-              {profileOpen && (
-                <div id="profile-menu" className="lw-profile-menu">
+              {profileOpen && <div id="profile-menu" className="lw-profile-menu">
                   <div className="lw-profile-identity">
                     <span className="lw-avatar" aria-hidden="true">
                       {displayName.charAt(0).toUpperCase()}
                     </span>
                     <div>
                       <b>{displayName}</b>
-                      <small>{usuario?.rol?.nombre}</small>
+                      <small>{c(usuario?.rol?.nombre, usuario?.rol?.nombre === "Administrador" ? "Administrator" : usuario?.rol?.nombre === "Operador" ? "Operator" : usuario?.rol?.nombre)}</small>
                       <small className="lw-profile-email">
                         {usuario?.correo}
                       </small>
@@ -346,127 +295,78 @@ export default function Home() {
                   </div>
                   <button onClick={() => navigate("profile")}>
                     <UserRound size={16} />
-                    {es ? "Mi perfil" : "My profile"}
+                    {c("Mi perfil", "My profile")}
                   </button>
                   <button onClick={() => navigate("password")}>
                     <LockKeyhole size={17} />
-                    {es ? "Cambiar contraseña" : "Change password"}
+                    {c("Cambiar contraseña", "Change password")}
                   </button>
                   <button onClick={logout}>
                     <LogOut size={16} />
-                    {es ? "Cerrar sesión" : "Sign out"}
+                    {c("Cerrar sesión", "Sign out")}
                   </button>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
         </header>
-        {selected === "inventory" ? (
-          <Catalog key="inventory" />
-        ) : selected === "suppliers" ? (
-          <Catalog key="suppliers" suppliers />
-        ) : selected === "productDetail" ? (
-          <ProductDetail />
-        ) : selected === "users" ? (
-          admin ? (
-            <UsersPage />
-          ) : (
-            <main className="lw-content account-page">
-              <h1>{es ? "Acceso restringido" : "Access denied"}</h1>
-            </main>
-          )
-        ) : selected === "settings" ? (
-          admin ? (
-            <SettingsPage />
-          ) : (
-            <main className="lw-content account-page">
-              <h1>{es ? "Acceso restringido" : "Access denied"}</h1>
-            </main>
-          )
-        ) : selected === "profile" ? (
-          <Profile />
-        ) : selected === "home" ? (
-          <main className="lw-content lw-dashboard">
-            <section
-              className="lw-hero"
-              style={{
-                backgroundImage: `linear-gradient(90deg,#f8fbff 0%,rgba(248,251,255,.91) 39%,rgba(248,251,255,.10) 100%),url(${banner})`,
-              }}
-            >
+        {selected === "inventory" ? <Catalog key="inventory" /> : selected === "suppliers" ? <Catalog key="suppliers" suppliers /> : selected === "productDetail" ? <ProductDetail /> : selected === "users" ? admin ? <UsersPage /> : <main className="lw-content account-page">
+              <h1>{c("Acceso restringido", "Access denied")}</h1>
+            </main> : selected === "settings" ? admin ? <SettingsPage /> : <main className="lw-content account-page">
+              <h1>{c("Acceso restringido", "Access denied")}</h1>
+            </main> : selected === "profile" ? <Profile /> : selected === "home" ? <main className="lw-content lw-dashboard">
+            <section className="lw-hero" style={{
+          backgroundImage: `linear-gradient(90deg,#f8fbff 0%,rgba(248,251,255,.91) 39%,rgba(248,251,255,.10) 100%),url(${banner})`
+        }}>
               <div>
                 <h1>
                   {greeting}, {firstName}!
                 </h1>
                 <p>
-                  {es
-                    ? "Gracias por ser parte de Living Water Guatemala."
-                    : "Thank you for being part of Living Water Guatemala."}
+                  {c("Gracias por ser parte de Living Water Guatemala.", "Thank you for being part of Living Water Guatemala.")}
                 </p>
               </div>
               <blockquote>
                 “
-                {es
-                  ? "Llevando agua segura\ny esperanza a más comunidades."
-                  : "Bringing safe water\nand hope to more communities."}
+                {c("Llevando agua segura\ny esperanza a más comunidades.", "Bringing safe water\nand hope to more communities.")}
                 ”<span />
               </blockquote>
             </section>
             <div className="lw-data-note">
-              {es
-                ? "Vista de diseño: los indicadores y tablas se mostrarán cuando se conecten los módulos de inventario. No se utilizan datos ficticios."
-                : "Design preview: metrics and tables will populate when inventory modules are connected. No fictitious data is shown."}
+              {c("Vista de diseño: los indicadores y tablas se mostrarán cuando se conecten los módulos de inventario. No se utilizan datos ficticios.", "Design preview: metrics and tables will populate when inventory modules are connected. No fictitious data is shown.")}
             </div>
-            <section
-              className="lw-stats"
-              aria-label={es ? "Indicadores" : "Metrics"}
-            >
-              {cards.map((c) => (
-                <article className="lw-stat" key={c.es}>
-                  <div className={`lw-stat-icon ${c.tone}`}>
-                    <c.icon size={35} />
+            <section className="lw-stats" aria-label={c("Indicadores", "Metrics")}>
+              {cards.map(card => <article className="lw-stat" key={card.es}>
+                  <div className={`lw-stat-icon ${card.tone}`}>
+                    <card.icon size={35} />
                   </div>
                   <div>
                     <strong className="lw-stat-value">—</strong>
-                    <p>{t(c)}</p>
-                    <button onClick={() => navigate(c.key)}>
-                      {es ? c.linkEs : c.linkEn} <ArrowRight size={15} />
+                    <p>{t(card)}</p>
+                    <button onClick={() => navigate(card.key)}>
+                      {c(card.linkEs, card.linkEn)} <ArrowRight size={15} />
                     </button>
                   </div>
-                </article>
-              ))}
+                </article>)}
             </section>
             <div className="lw-grid">
               <section className="lw-panel">
                 <div className="lw-panel-header">
-                  <h2>{es ? "Movimientos recientes" : "Recent movements"}</h2>
+                  <h2>{c("Movimientos recientes", "Recent movements")}</h2>
                   <button onClick={() => navigate("movements")}>
-                    {es ? "Ver todos" : "View all"} <ArrowRight size={17} />
+                    {c("Ver todos", "View all")} <ArrowRight size={17} />
                   </button>
                 </div>
                 <div className="lw-table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        {(es
-                          ? [
-                              "Fecha",
-                              "Tipo",
-                              "Documento",
-                              "Producto",
-                              "Cantidad",
-                            ]
-                          : ["Date", "Type", "Document", "Product", "Quantity"]
-                        ).map((x) => (
-                          <th key={x}>{x}</th>
-                        ))}
+                        {c(["Fecha", "Tipo", "Documento", "Producto", "Cantidad"], ["Date", "Type", "Document", "Product", "Quantity"]).map(x => <th key={x}>{x}</th>)}
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td colSpan="5" className="lw-empty">
-                          {es
-                            ? "Los movimientos aparecerán cuando se conecte el módulo."
-                            : "Movements will appear when the module is connected."}
+                          {c("Los movimientos aparecerán cuando se conecte el módulo.", "Movements will appear when the module is connected.")}
                         </td>
                       </tr>
                     </tbody>
@@ -475,80 +375,46 @@ export default function Home() {
               </section>
               <section className="lw-panel">
                 <div className="lw-panel-header">
-                  <h2>{es ? "Stock por categoría" : "Stock by category"}</h2>
+                  <h2>{c("Stock por categoría", "Stock by category")}</h2>
                   <button onClick={() => navigate("inventory")}>
-                    {es ? "Ver todas" : "View all"} <ArrowRight size={17} />
+                    {c("Ver todas", "View all")} <ArrowRight size={17} />
                   </button>
                 </div>
                 <div className="lw-category">
                   <div className="lw-donut-placeholder">
                     <span>
-                      —<small>{es ? "Productos" : "Products"}</small>
+                      —<small>{c("Productos", "Products")}</small>
                     </span>
                   </div>
                   <div className="lw-category-list">
-                    {(es
-                      ? [
-                          "Higiene y salud",
-                          "Construcción",
-                          "Herramientas",
-                          "Oficina",
-                          "Otros",
-                        ]
-                      : [
-                          "Health & hygiene",
-                          "Construction",
-                          "Tools",
-                          "Office",
-                          "Other",
-                        ]
-                    ).map((x, i) => (
-                      <div key={x}>
+                    {c(["Higiene y salud", "Construcción", "Herramientas", "Oficina", "Otros"], ["Health & hygiene", "Construction", "Tools", "Office", "Other"]).map((x, i) => <div key={x}>
                         <i className={`lw-dot dot-${i}`} />
                         <span>{x}</span>
                         <b>—</b>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </div>
               </section>
               <section className="lw-panel">
                 <div className="lw-panel-header">
                   <h2>
-                    {es ? "Productos con stock bajo" : "Low-stock products"}
+                    {c("Productos con stock bajo", "Low-stock products")}
                   </h2>
                   <button onClick={() => navigate("inventory")}>
-                    {es ? "Ver todos" : "View all"} <ArrowRight size={17} />
+                    {c("Ver todos", "View all")} <ArrowRight size={17} />
                   </button>
                 </div>
                 <div className="lw-table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        {(es
-                          ? [
-                              "Código",
-                              "Descripción",
-                              "Stock actual",
-                              "Stock mínimo",
-                            ]
-                          : [
-                              "Code",
-                              "Description",
-                              "Current stock",
-                              "Minimum stock",
-                            ]
-                        ).map((x) => (
-                          <th key={x}>{x}</th>
-                        ))}
+                        {c(["Código", "Descripción", "Stock actual", "Stock mínimo"], ["Code", "Description", "Current stock", "Minimum stock"]).map(x => <th key={x}>{x}</th>)}
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
                         <td colSpan="4" className="lw-empty">
-                          {es
-                            ? "Sin datos de inventario conectados."
-                            : "No inventory data connected."}
+                          {c("Sin datos de inventario conectados.", "No inventory data connected.")}
                         </td>
                       </tr>
                     </tbody>
@@ -557,51 +423,39 @@ export default function Home() {
               </section>
               <section className="lw-panel">
                 <div className="lw-panel-header">
-                  <h2>{es ? "Accesos rápidos" : "Quick access"}</h2>
+                  <h2>{c("Accesos rápidos", "Quick access")}</h2>
                 </div>
                 <div className="lw-quick">
-                  {quick.map((q) => (
-                    <button
-                      key={q.es}
-                      className={`lw-quick-btn ${q.tone}`}
-                      onClick={() => q.key === "inventory" ? routerNavigate("/inventario#nuevo") : navigate(q.key)}
-                    >
+                  {quick.map(q => <button key={q.es} className={`lw-quick-btn ${q.tone}`} onClick={() => q.key === "inventory" ? routerNavigate("/inventario#nuevo") : navigate(q.key)}>
                       <q.icon size={30} strokeWidth={2.4} />
                       <span>{t(q)}</span>
-                    </button>
-                  ))}
+                    </button>)}
                 </div>
               </section>
             </div>
-          </main>
-        ) : (
-          <main className="lw-content lw-placeholder-page">
+          </main> : <main className="lw-content lw-placeholder-page">
             <h1>{t(selectedItem)}</h1>
             <div className="lw-panel lw-coming">
               <selectedItem.icon size={42} />
-              <h2>{es ? "Módulo en desarrollo" : "Module in development"}</h2>
+              <h2>{c("Módulo en desarrollo", "Module in development")}</h2>
               <p>
-                {es
-                  ? "Esta sección se integrará en una próxima fase. El acceso y la sesión siguen funcionando."
-                  : "This section will be integrated in a later phase. Authentication remains functional."}
+                {c("Esta sección se integrará en una próxima fase. El acceso y la sesión siguen funcionando.", "This section will be integrated in a later phase. Authentication remains functional.")}
               </p>
               <button onClick={() => navigate("home")}>
-                {es ? "Volver al inicio" : "Back to home"}
+                {c("Volver al inicio", "Back to home")}
               </button>
             </div>
-          </main>
-        )}
+          </main>}
         <footer className="lw-footer">
           <span>
             © 2026 Living Water Guatemala.{" "}
-            {es ? "Todos los derechos reservados." : "All rights reserved."}
+            {c("Todos los derechos reservados.", "All rights reserved.")}
           </span>
           <div>
-            {es ? "Términos de uso" : "Terms of use"} <i />{" "}
-            {es ? "Privacidad" : "Privacy"} <i /> {es ? "Soporte" : "Support"}
+            {c("Términos de uso", "Terms of use")} <i />{" "}
+            {c("Privacidad", "Privacy")} <i /> {c("Soporte", "Support")}
           </div>
         </footer>
       </div>
-    </div>
-  );
+    </div>;
 }

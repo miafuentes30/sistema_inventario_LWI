@@ -258,7 +258,7 @@ export default function Users() {
               <option value="">{c("Todos", "All")}</option>
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.nombre}
+                  {c(r.nombre, r.nombre)}
                 </option>
               ))}
             </select>
@@ -358,7 +358,7 @@ export default function Users() {
                     </td>
                     <td>{u.correo}</td>
                     <td>
-                      <span className="account-badge role">{u.rol.nombre}</span>
+                      <span className="account-badge role">{c(u.rol.nombre, u.rol.nombre)}</span>
                     </td>
                     <td>
                       <Status active={u.activo} />
@@ -512,13 +512,13 @@ export default function Users() {
                 >
                   {roles.map((r) => (
                     <option value={r.id} key={r.id}>
-                      {r.nombre}
+                      {c(r.nombre, r.nombre)}
                     </option>
                   ))}
                   {modal.user &&
                     !roles.some((r) => r.id === modal.user.rol.id) && (
                       <option value={modal.user.rol.id}>
-                        {modal.user.rol.nombre}
+                        {c(modal.user.rol.nombre, modal.user.rol.nombre)}
                       </option>
                     )}
                 </select>

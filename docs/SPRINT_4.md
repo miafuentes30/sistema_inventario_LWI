@@ -3,7 +3,7 @@
 ## Analysis before implementation
 - React 18 / Vite / React Router. App defines protected routes; Home owns the sidebar, header and module selection.
 - Users uses AccountUI (Modal, Notice, Status), accounts.css and the shared API helper. Settings and Profile use the same authentication, layout and API service. Dashboard already had inventory navigation placeholders and no real inventory metrics.
-- LanguageContext is the existing translation provider (previously es/en). Sprint dictionaries are imported by that same provider; no second context or translation engine was introduced. Existing screens retain their prior Spanish fallback when French is selected.
+- LanguageContext is the existing translation provider (previously es/en). Sprint dictionaries are imported by that same provider; no second context or translation engine was introduced. French now covers the existing dashboard, navigation, search, accounts, settings, profile, login and password recovery through the same provider and useCopy helper.
 - Express currently mounts health, auth, usuarios, perfil and configuracion. No product, supplier or movement endpoints exist. No backend, Prisma schema, migration, database or environment file was changed.
 
 ## Delivered
@@ -13,7 +13,7 @@
 - Dynamic supplier form: person (first/last name required), sole proprietor (business name required, registered name optional), company (trade name required, legal name optional). Fields remain separate; changing type clears incompatible draft fields. No company suffix is added.
 - Supplier search covers every name field; sorting uses the primary name with localeCompare for the selected language. Names precede surnames.
 - Product details reserve all requested attributes and a related movements section. Unconnected identifiers show an unavailable message and em dashes, with no fabricated stock or movements.
-- New module text is translated in es/en/fr using LanguageContext. The language selector in either catalog persists the choice in the existing browser preference.
+- New module text is translated in es/en/fr using LanguageContext. The existing ES/EN selector now also offers FR; Settings offers French too. Catalogs no longer add a separate selector.
 - Responsive layout uses existing institutional styles and Lucide icons; added filter/detail breakpoints at 1100 and 560px.
 
 ## Backend integration pending
@@ -27,11 +27,11 @@ Existing authenticated API helpers and middleware can be reused; the current acc
 
 ## Verification
 - npm run build --prefix frontend: passes.
-- npm run test:sprint4 --prefix frontend: 2 tests pass (model rules and DOM integration).
+- npm run test:sprint4 --prefix frontend: 3 tests pass (French dictionary coverage, model rules and DOM integration).
 - DOM integration covers protected navigation, all supplier types, optional company fields, validation feedback, three languages, unavailable product details and rendering Home/Users/Profile/Settings with mocked account responses. Test fixtures are confined to tests. No PostgreSQL connection or write occurs.
 - git diff --check: passes.
 - Existing npm test suites were inspected but intentionally not run: they use real PostgreSQL and write accounts/profile data; successful auth also updates last access. This respects the request not to modify the database.
-- Visual browser QA on desktop/tablet/mobile remains pending. CSS breakpoints and DOM checks are not a substitute for visual QA. Existing screens have a render smoke check, not a complete backend regression run.
+- Visually reviewed French Settings and Suppliers in the existing VS Code browser preview. Dedicated tablet/mobile visual QA remains pending. DOM tests assert French text for all implemented pages, sidebar, system search, profile menu, login/recovery validation and settings tabs. This is not a complete backend regression run.
 
 ## Run and review
 1. With the existing backend environment configured: npm run dev --prefix backend.
@@ -39,8 +39,15 @@ Existing authenticated API helpers and middleware can be reused; the current acc
 3. Sign in with an existing authorized account; visit /inventario and /proveedores or use the sidebar.
 4. Open New product: validate required fields and nonnegative costs/quantities. No stock input is present and validation does not save.
 5. Open New supplier: switch among all three types, check name order and optional secondary company names. Validate with only the main company name.
-6. Change es/en/fr using the catalog language selector; visit /inventario/unconnected to check translated details and unavailable state.
+6. Change es/en/fr using the existing language selector or Settings; visit /inventario/unconnected to check translated details and unavailable state.
 7. Review widths 1440, 768 and 390px, modal scrolling, table horizontal scrolling, keyboard focus and the existing profile/account routes.
 8. Test ordering/search/pagination with backend records after integration; currently there are intentionally no connected records.
 
 Suggested commit: feat(frontend): add sprint 4 inventory supplier and product detail interfaces
+
+Visual update: inventory now follows the supplied reference with breadcrumbs, five metric placeholders, disabled export, warehouse filter, expanded columns and compact pagination. Product details share this styling. No reference records or metric values were copied.
+
+French and supplier follow-up:
+- Added frenchTranslations.js and connected French copy to the existing LanguageContext/useCopy; corrected binary Spanish/English branches and French date formatting.
+- Supplier view follows the reference with a hero icon, four summary cards, apply/clear filters, primary/additional name columns, illustrated empty state and 10/25/50 rows per page. Summary values remain unavailable placeholders until connected.
+- Verified French live in Settings and Suppliers without changing backend data. The chosen language remains persisted in the existing browser preference.

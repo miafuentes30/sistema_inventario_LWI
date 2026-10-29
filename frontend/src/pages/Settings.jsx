@@ -148,7 +148,7 @@ export default function Settings() {
                     </div>
                     <dl>
                       <dt>{c("Nombre", "Name")}</dt>
-                      <dd>{data.nombre}</dd>
+                      <dd>{c(data.nombre, data.nombre)}</dd>
                       <dt>{c("Organización", "Organization")}</dt>
                       <dd>{data.organizacion}</dd>
                       <dt>
@@ -193,6 +193,7 @@ export default function Settings() {
                     >
                       <option value="es">Español</option>
                       <option value="en">English</option>
+                      <option value="fr">Français</option>
                     </select>
                   </label>
                   <label>
@@ -261,7 +262,7 @@ export default function Settings() {
                     )}
                   </dd>
                   <dt>{c("Rol actual", "Current role")}</dt>
-                  <dd>{user?.rol.nombre}</dd>
+                  <dd>{c(user?.rol.nombre, user?.rol.nombre)}</dd>
                   <dt>{c("Estado", "Status")}</dt>
                   <dd>
                     <Status active={user?.activo} />

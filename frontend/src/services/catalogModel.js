@@ -21,6 +21,7 @@ export function filterRecords(items, filters, suppliers, language) {
     return names.some(value => normalize(value).includes(normalize(filters.search))) &&
       (!filters.status || String(item.active) === filters.status) &&
       (!filters.type || item[suppliers ? "type" : "inventoryType"] === filters.type) &&
-      (!filters.category || item.category === filters.category);
+      (!filters.category || item.category === filters.category) &&
+      (!filters.location || item.location === filters.location);
   }).sort((a, b) => (suppliers ? supplierNames(a)[0] : a.code).localeCompare(suppliers ? supplierNames(b)[0] : b.code, language, { sensitivity: "base", numeric: true }));
 }

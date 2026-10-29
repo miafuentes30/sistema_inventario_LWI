@@ -58,9 +58,9 @@ export default function Login() {
       </header>
       {passwordChanged && (
         <p role="status">
-          {language === "en"
+          {language === "fr" ? t("passwordUpdated") : language === "en"
             ? "Password updated. Sign in again on all your devices."
-            : "Contraseña actualizada. Inicia sesión nuevamente en todos tus dispositivos."}
+            : "Contrase\u00f1a actualizada. Inicia sesi\u00f3n nuevamente en todos tus dispositivos."}
         </p>
       )}
       <form
@@ -75,7 +75,7 @@ export default function Login() {
           <input
             type="email"
             name="correo"
-            placeholder="nombre@water.cc"
+            placeholder={t("emailPlaceholder")}
             value={correo}
             onChange={(event) => setCorreo(event.target.value)}
             autoComplete="email"

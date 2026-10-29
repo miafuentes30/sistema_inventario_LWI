@@ -73,14 +73,14 @@
   min-width: 0;
 }
 .lw-hero h1 {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .lw-stat > div:last-child {
   min-width: 0;
 }
 .lw-stat p,
 .lw-quick-btn span {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .lw-panel-header {
   flex-wrap: wrap;
@@ -99,7 +99,7 @@
   min-width: 0;
 }
 .account-page .account-heading h1 {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .account-heading > button {
   flex-shrink: 0;
@@ -157,7 +157,7 @@
 }
 .settings-card-title h2 {
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .settings-timezone > svg {
   flex-shrink: 0;
@@ -235,7 +235,7 @@
   padding: 3px 6px;
   white-space: nowrap;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.3;
   color: #8a9bb0;
   background: white;
@@ -279,7 +279,7 @@
   align-items: center;
   padding: 8px 10px 10px;
   color: #8291a6;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.4px;
 }
@@ -287,7 +287,7 @@
   background: #f0f5fa;
   padding: 2px 6px;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .system-search-popover [role="listbox"] {
   max-height: min(360px, calc(100dvh - 240px));
@@ -335,7 +335,7 @@
   margin: 6px 3px 0;
   padding: 10px 7px 4px;
   border-top: 1px solid #edf2f7;
-  font-size: 10px;
+  font-size: 12px;
   color: #91a0b3;
   line-height: 1.6;
 }
@@ -688,7 +688,7 @@
     line-height: 1.5;
   }
   .lw-stat button {
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.5;
   }
   .lw-footer {
@@ -772,4 +772,34 @@
   .lw-dashboard .lw-stats,
   .account-stats { grid-template-columns: minmax(0, 1fr); }
   .lw-dashboard .lw-stat { min-height: 110px; }
+}
+
+/* Keep translated labels readable instead of clipping or shrinking them. */
+.account-page label, .account-modal label { line-height: 1.5; }
+.account-page h2, .account-modal h2, .account-page p,
+.account-page dt, .account-page dd, .account-badge,
+.account-primary, .account-secondary, .lw-nav-item span {
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+.settings-card-title { align-items: flex-start; }
+.settings-page .settings-future-card h2 { font-size: 17px; }
+.settings-page .settings-future-card > p { font-size: 14px; }
+.settings-page .account-institution dd { line-height: 1.5; }
+.settings-timezone { flex-wrap: wrap; padding-block: 8px; }
+.settings-timezone span { white-space: normal; }
+.account-table th { white-space: normal; line-height: 1.5; }
+.supplier-stats .lw-panel > div, .catalog-stats .lw-panel > div { min-width: 0; }
+.suppliers-page .supplier-page-size { flex-wrap: wrap; }
+@container (max-width: 1150px) {
+  .supplier-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .catalog-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 750px) {
+  .catalog-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inventory-page .catalog-filters, .suppliers-page .catalog-filters { grid-template-columns: minmax(0, 1fr); }
+  .suppliers-page .catalog-filters > button:last-of-type { grid-column: 1; }
+}
+@container (max-width: 460px) {
+  .supplier-stats, .catalog-stats { grid-template-columns: minmax(0, 1fr); }
 }

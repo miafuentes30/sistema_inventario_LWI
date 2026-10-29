@@ -4,6 +4,36 @@ import { JSDOM } from "jsdom";
 import { createServer } from "vite";
 import { emptySupplier, emptyProduct, validProduct, validSupplier, filterRecords, supplierNames } from "./src/services/catalogModel.js";
 import { sprintTranslations as translations } from "./src/context/sprintTranslations.js";
+import { frenchCopy, frenchAuth } from "./src/context/frenchTranslations.js";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { parse } = require("@babel/parser");
+const traverse = require("@babel/traverse").default;
+
+test("All static bilingual UI copy has a French translation", () => {
+  const strings = new Set();
+  function collect(node) {
+    if (!node) return;
+    if (node.type === "StringLiteral") strings.add(node.value);
+    if (node.type === "ArrayExpression") node.elements.forEach(collect);
+    if (node.type === "ConditionalExpression") { collect(node.consequent); collect(node.alternate); }
+  }
+  for (const file of ["pages/Home.jsx", "pages/Users.jsx", "pages/Profile.jsx", "pages/Settings.jsx", "components/AccountUI.jsx", "components/SystemSearch.jsx"]) {
+    const ast = parse(readFileSync(new URL(`./src/${file}`, import.meta.url), "utf8"), { sourceType: "module", plugins: ["jsx"] });
+    traverse(ast, {
+      CallExpression({ node }) { if (node.callee.name === "c") collect(node.arguments[1]); },
+      ObjectProperty({ node }) { if (["en", "linkEn"].includes(node.key.name)) collect(node.value); }
+    });
+  }
+  for (const value of strings) assert.ok(frenchCopy[value], `Missing French translation: ${value}`);
+  const auth = parse(readFileSync(new URL("./src/context/LanguageContext.jsx", import.meta.url), "utf8"), { sourceType: "module", plugins: ["jsx"] });
+  traverse(auth, { ObjectProperty({ node }) {
+    if (node.key.name === "en" && node.value.type === "ObjectExpression") {
+      for (const property of node.value.properties) assert.ok(frenchAuth[property.key.name], `Missing French auth key: ${property.key.name}`);
+    }
+  } });
+});
 test("Validation, separate supplier names, search, sorting and translations", () => {
   assert.equal(validSupplier({ ...emptySupplier, type: "person", firstName: "Ana" }), false);
   assert.equal(validSupplier({ ...emptySupplier, type: "person", firstName: "Ana", lastName: "Perez" }), true);
@@ -50,13 +80,18 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
   try {
     await act(async () => root.render(React.createElement(BrowserRouter, null, React.createElement(AuthProvider, null, React.createElement(LanguageProvider, null, React.createElement(App))))));
     assert.equal(document.querySelector("main h1").textContent, translations.es.inventory);
+    assert.equal(document.querySelectorAll(".catalog-stats article").length, 5);
+    assert.equal(document.querySelectorAll("thead th").length, 10);
+    assert.equal(document.querySelector(".catalog-language"), null);
     await click(button(translations.es.newProduct)); assert.equal(document.querySelectorAll("dialog input").length, 7);
     await act(async () => Simulate.submit(document.querySelector("dialog form")));
     assert.ok(document.querySelector('[role="alert"]'));
     await click(document.querySelector("dialog .account-modal-head button"));
     await click(button(translations.es.suppliers)); assert.equal(window.location.pathname, "/proveedores");
     for (const lang of ["es", "en", "fr"]) {
-      await change(document.querySelector(".catalog-language select"), lang);
+      await route("/configuracion");
+      await change(document.querySelector(".settings-preferences select"), lang);
+      await route("/proveedores");
       const t = translations[lang];
       assert.equal(document.documentElement.lang, lang);
       assert.equal(document.querySelector("main h1").textContent, t.suppliers);
@@ -74,10 +109,42 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
       assert.ok([...document.querySelectorAll("dd")].every(el => el.textContent === "\u2014"));
       await route("/proveedores");
     }
-    await route("/"); assert.ok(document.querySelector(".lw-dashboard"));
-    await route("/usuarios"); assert.ok(document.querySelector(".account-page"));
-    await route("/perfil"); assert.ok(document.querySelector(".account-page"));
-    await route("/configuracion"); assert.ok(document.querySelector(".settings-page"));
+    await route("/");
+    assert.ok(document.querySelector(".lw-dashboard"));
+    assert.ok(button("Paramètres"));
+    assert.ok(button("Utilisateurs"));
+    assert.ok(document.querySelector("main").textContent.includes("Merci de faire partie"));
+    assert.equal(document.querySelector('[role="combobox"]').placeholder, "Rechercher une section…");
+    await change(document.querySelector('[role="combobox"]'), "Paramètres");
+    assert.ok(document.querySelector('[role="option"]').textContent.includes("Paramètres"));
+    await route("/usuarios");
+    assert.equal(document.querySelector("main h1").textContent, "Gestion des utilisateurs");
+    assert.ok(document.querySelector("main").textContent.includes("Aucun utilisateur trouvé."));
+    await route("/perfil");
+    assert.equal(document.querySelector("main h1").textContent, "Mon profil");
+    assert.ok(document.querySelector("main").textContent.includes("Changer le mot de passe"));
+    await route("/configuracion");
+    assert.equal(document.querySelector("main h1").textContent, "Paramètres du système");
+    assert.ok(document.querySelector("main").textContent.includes("Préférences du système"));
+    await click(button("Sécurité"));
+    assert.ok(document.querySelector("main").textContent.includes("Sécurité du compte"));
+    await route("/proveedores");
+    assert.equal(document.querySelectorAll(".supplier-stats article").length, 4);
+    assert.equal(document.querySelector(".supplier-empty h2").textContent, translations.fr.supplierEmpty);
+    await change(document.querySelector(".supplier-page-size select"), "25");
+    assert.equal(document.querySelector(".supplier-page-size select").value, "25");
+    await click(button(translations.fr.applyFilters));
+    await click(document.querySelector(".lw-user-btn"));
+    assert.ok(button("Mon profil"));
+    await click(button("Se déconnecter"));
+    assert.equal(document.querySelector(".login-header h1").textContent, "Bienvenue");
+    assert.equal(document.querySelector('[aria-pressed="true"] .language-code').textContent, "FR");
+    await act(async () => Simulate.submit(document.querySelector(".login-form")));
+    assert.equal(document.querySelector('[role="alert"]').textContent, frenchAuth.institutionalEmail);
+    await route("/recuperar-contrasena");
+    assert.equal(document.querySelector("h1").textContent, "Mot de passe oublié ?");
+    await act(async () => Simulate.submit(document.querySelector(".login-form")));
+    assert.equal(document.querySelector('[role="alert"]').textContent, frenchAuth.invalidEmail);
     assert.ok(calls.every(method => method === "GET"));
   } finally { await act(async () => root.unmount()); await vite.close(); globalThis.fetch = originalFetch; dom.window.close(); }
 });

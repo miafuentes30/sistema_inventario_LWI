@@ -156,7 +156,7 @@ export default function Profile() {
                 <h2>{user.nombre}</h2>
                 <p>{user.correo}</p>
                 <span className="account-badge role">
-                  {user.rol.nombre}
+                  {c(user.rol.nombre, user.rol.nombre)}
                 </span>{" "}
                 <Status active={user.activo} />
               </div>

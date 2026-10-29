@@ -19,6 +19,9 @@ export default function AuthLayout({ children, variant = "login" }) {
             <button type="button" className={language === "en" ? "language-option is-active" : "language-option"} onClick={() => setLanguage("en")} aria-label={t("english")} aria-pressed={language === "en"}>
               <span className="language-code" aria-hidden="true">EN</span>{t("english")}
             </button>
+            <button type="button" className={language === "fr" ? "language-option is-active" : "language-option"} onClick={() => setLanguage("fr")} aria-label={t("french")} aria-pressed={language === "fr"}>
+              <span className="language-code" aria-hidden="true">FR</span>Français
+            </button>
           </div>
         </div>
         <div className="login-form-container">
