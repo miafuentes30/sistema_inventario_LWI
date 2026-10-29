@@ -7,7 +7,8 @@
     "test": "node --test account-ui.test.mjs",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:sprint4": "node --test sprint4.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

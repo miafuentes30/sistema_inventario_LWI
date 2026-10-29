@@ -1,3 +1,5 @@
+import Catalog from "./Catalog";
+import ProductDetail from "./ProductDetail";
 import SystemSearch from "../components/SystemSearch";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LockKeyhole, UserRound } from "lucide-react";
@@ -33,7 +35,8 @@ import banner from "../assets/images/dashboard-landscape.svg";
 
 const items = [
   { key: "home", es: "Inicio", en: "Home", icon: HomeIcon },
-  { key: "inventory", es: "Inventario", en: "Inventory", icon: Package },
+  { key: "inventory", es: "Inventario", en: "Inventory", fr: "Inventaire", icon: Package },
+  { key: "suppliers", es: "Proveedores", en: "Suppliers", fr: "Fournisseurs", icon: Users },
   { key: "entries", es: "Entradas", en: "Entries", icon: Plus },
   { key: "exits", es: "Salidas", en: "Exits", icon: ArrowUpFromLine },
   { key: "returns", es: "Devoluciones", en: "Returns", icon: RotateCcw },
@@ -88,17 +91,19 @@ const quick = [
 ];
 export default function Home() {
   const { usuario, logout } = useAuth();
-  const { language } = useLanguage();
+  const { language, t: translate } = useLanguage();
   const es = language !== "en";
   const location = useLocation();
   const routerNavigate = useNavigate();
   const [localSelected, setSelected] = useState("home");
   const pathKeys = {
+    "/inventario": "inventory",
+    "/proveedores": "suppliers",
     "/usuarios": "users",
     "/configuracion": "settings",
     "/perfil": "profile",
   };
-  const selected = pathKeys[location.pathname] || localSelected;
+  const selected = location.pathname.startsWith("/inventario/") ? "productDetail" : pathKeys[location.pathname] || localSelected;
   const admin = usuario?.rol?.nombre === "Administrador";
   const visibleItems = items.filter(
     (i) => admin || !["users", "settings"].includes(i.key),
@@ -148,7 +153,7 @@ export default function Home() {
   useEffect(() => {
     setProfileOpen(false);
   }, [location.pathname]);
-  const t = (obj) => (es ? obj.es : obj.en);
+  const t = (obj) => language === "fr" && ["inventory", "suppliers"].includes(obj.key) ? translate(obj.es === "Nuevo producto" ? "newProduct" : obj.key) : (es ? obj.es : obj.en);
   const selectedItem = items.find((i) => i.key === selected) || items[0];
   const displayName = usuario?.nombre?.trim() || (es ? "Usuario" : "User");
   const firstName = displayName.split(/\s+/)[0];
@@ -166,6 +171,8 @@ export default function Home() {
         : "Good evening";
   const navigate = (key) => {
     const routes = {
+      inventory: "/inventario",
+      suppliers: "/proveedores",
       users: "/usuarios",
       settings: "/configuracion",
       profile: "/perfil",
@@ -354,7 +361,13 @@ export default function Home() {
             </div>
           </div>
         </header>
-        {selected === "users" ? (
+        {selected === "inventory" ? (
+          <Catalog key="inventory" />
+        ) : selected === "suppliers" ? (
+          <Catalog key="suppliers" suppliers />
+        ) : selected === "productDetail" ? (
+          <ProductDetail />
+        ) : selected === "users" ? (
           admin ? (
             <UsersPage />
           ) : (
@@ -551,7 +564,7 @@ export default function Home() {
                     <button
                       key={q.es}
                       className={`lw-quick-btn ${q.tone}`}
-                      onClick={() => navigate(q.key)}
+                      onClick={() => q.key === "inventory" ? routerNavigate("/inventario#nuevo") : navigate(q.key)}
                     >
                       <q.icon size={30} strokeWidth={2.4} />
                       <span>{t(q)}</span>

@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { sprintTranslations } from "./sprintTranslations";
+
 const translations = {
   es: {
     language: "Idioma", spanish: "Español", english: "Inglés", welcome: "Bienvenido", system: "Sistema de Inventario",
@@ -53,14 +55,14 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
-    try { return localStorage.getItem("lwi_language") === "en" ? "en" : "es"; }
+    try { return ["es", "en", "fr"].includes(localStorage.getItem("lwi_language")) ? localStorage.getItem("lwi_language") : "es"; }
     catch { return "es"; }
   });
   useEffect(() => {
     document.documentElement.lang = language;
     try { localStorage.setItem("lwi_language", language); } catch { /* Language works without storage. */ }
   }, [language]);
-  return <LanguageContext.Provider value={{ language, setLanguage, t: key => translations[language][key] ?? key }}>{children}</LanguageContext.Provider>;
+  return <LanguageContext.Provider value={{ language, setLanguage, t: key => sprintTranslations[language]?.[key] ?? translations[language]?.[key] ?? translations.es[key] ?? key }}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {

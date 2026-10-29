@@ -39,7 +39,7 @@ export function Modal({ title, children, onClose, busy = false }) {
   const ref = useRef(null);
   const close = useRef(onClose);
   close.current = onClose;
-  const c = useCopy();
+  const { t } = useLanguage();
   useEffect(() => {
     const previous = document.activeElement;
     const dialog = ref.current;
@@ -70,7 +70,7 @@ export function Modal({ title, children, onClose, busy = false }) {
           disabled={busy}
           className="account-icon"
           onClick={onClose}
-          aria-label={c("Cerrar", "Close")}
+          aria-label={t("close")}
         >
           <X size={20} />
         </button>

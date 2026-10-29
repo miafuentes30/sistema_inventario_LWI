@@ -19,7 +19,7 @@ export default function SystemSearch({
   const wrapper = useRef(null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const label = (item) => (es ? item.es : item.en);
+  const label = (item) => language === "fr" && item.fr ? item.fr : (es ? item.es : item.en);
   const results = items.filter((item) =>
     normalize(label(item)).includes(normalize(value)),
   );
