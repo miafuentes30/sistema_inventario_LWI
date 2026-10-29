@@ -969,3 +969,431 @@ COMMENT ON FUNCTION public.lwi_fase3_abrir_conteo(BIGINT,BIGINT)
 COMMENT ON VIEW public.vw_f3_diferencias_conteo IS 'Las diferencias NO aplican ajustes de stock automaticamente';
 
 COMMIT;
+
+
+
+-- ============================================================================================
+-- LWI | FASE 4 | RBAC, configuracion y auditoria
+-- ============================================================================================
+
+BEGIN;
+
+-- VERIFICACION DE DEPENDENCIAS
+DO $$ BEGIN
+  IF to_regclass('public.auditoria_eventos') IS NULL
+    OR to_regclass('public.permisos') IS NULL
+    OR to_regclass('public.configuracion_sistema') IS NULL THEN
+      RAISE EXCEPTION 'Ejecute primero 01_crear_tablas_fase4.sql';
+  END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.lwi_f4_tocar_updated_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at:=now(); RETURN NEW; END $$;
+
+CREATE TRIGGER trg_f4_config_fecha BEFORE UPDATE ON public.configuracion_sistema
+ FOR EACH ROW EXECUTE FUNCTION public.lwi_f4_tocar_updated_at();
+CREATE TRIGGER trg_f4_rol_permisos_fecha BEFORE UPDATE ON public.rol_permisos
+ FOR EACH ROW EXECUTE FUNCTION public.lwi_f4_tocar_updated_at();
+CREATE TRIGGER trg_f4_politicas_fecha BEFORE UPDATE ON public.politicas_stock_bodega
+ FOR EACH ROW EXECUTE FUNCTION public.lwi_f4_tocar_updated_at();
+
+-- Configuracion: tipos y dominios conocidos. Nuevas claves requieren definir validaciones en API.
+CREATE OR REPLACE FUNCTION public.lwi_f4_validar_configuracion()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_int integer;
+BEGIN
+  IF NEW.clave='DIAS_ALERTA_VENCIMIENTO' THEN
+    IF jsonb_typeof(NEW.valor)<>'number' OR (NEW.valor #>> '{}') !~ '^[0-9]+$' THEN
+      RAISE EXCEPTION 'DIAS_ALERTA_VENCIMIENTO requiere entero 0..365';
+    END IF;
+    v_int := (NEW.valor #>> '{}')::integer;
+    IF v_int NOT BETWEEN 0 AND 365 THEN
+      RAISE EXCEPTION 'DIAS_ALERTA_VENCIMIENTO fuera del rango 0..365';
+    END IF;
+  ELSIF NEW.clave='HABILITAR_ALERTAS_INVENTARIO' THEN
+    IF jsonb_typeof(NEW.valor)<>'boolean' THEN
+      RAISE EXCEPTION 'HABILITAR_ALERTAS_INVENTARIO debe ser boolean';
+    END IF;
+  ELSIF NEW.clave='IDIOMA_PREDETERMINADO' THEN
+    IF jsonb_typeof(NEW.valor)<>'string' OR (NEW.valor #>> '{}') NOT IN ('es','en','fr') THEN
+      RAISE EXCEPTION 'Idioma permitido: es, en, fr';
+    END IF;
+  ELSIF NEW.clave='ZONA_HORARIA' THEN
+    IF jsonb_typeof(NEW.valor)<>'string' OR NOT EXISTS(
+      SELECT 1 FROM pg_timezone_names WHERE name=(NEW.valor #>> '{}')
+    ) THEN
+      RAISE EXCEPTION 'ZONA_HORARIA desconocida';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trg_f4_config_validar BEFORE INSERT OR UPDATE ON public.configuracion_sistema
+ FOR EACH ROW EXECUTE FUNCTION public.lwi_f4_validar_configuracion();
+
+-- Función de consulta RBAC; se debe invocar desde la API después de verificar el JWT.
+-- NO concede por sí sola privilegios PostgreSQL ni autentica al usuario que llama.
+CREATE OR REPLACE FUNCTION public.lwi_f4_usuario_tiene_permiso(
+  p_usuario_id BIGINT,p_clave VARCHAR)
+RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
+ SELECT EXISTS (
+   SELECT 1 FROM public.usuarios u
+   JOIN public.rol r ON r.id=u.rol_id AND r.activo
+   JOIN public.rol_permisos rp ON rp.rol_id=r.id AND rp.activo
+   JOIN public.permisos p ON p.id=rp.permiso_id AND p.activo
+   WHERE u.id=p_usuario_id AND u.activo AND p.clave=p_clave
+ );
+$$;
+
+-- Bitacora inmutable. Conservar sólo campos no secretos.
+-- SECURITY DEFINER permite registrar sin otorgar INSERT directo a la API.
+-- El propietario de la función debe ser un rol confiable de administración.
+CREATE OR REPLACE FUNCTION public.lwi_f4_auditar_cambio()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+DECLARE
+  v_old jsonb;
+  v_new jsonb;
+  v_key text;
+  v_actor bigint;
+  v_origen text;
+BEGIN
+  IF TG_OP<>'INSERT' THEN v_old:=to_jsonb(OLD); END IF;
+  IF TG_OP<>'DELETE' THEN v_new:=to_jsonb(NEW); END IF;
+
+  -- No guardar secretos (ni antes ni después): contraseña, tokens, claves de objetos.
+  IF v_old IS NOT NULL THEN
+    v_old:=v_old-'contraseña'-'password_hash'-'passwordHash'-'clave_almacenamiento'-'sha256';
+  END IF;
+  IF v_new IS NOT NULL THEN
+    v_new:=v_new-'contraseña'-'password_hash'-'passwordHash'-'clave_almacenamiento'-'sha256';
+  END IF;
+  IF TG_TABLE_NAME='usuarios' AND TG_OP='UPDATE' THEN
+    v_new:=jsonb_set(v_new,'{credencial_modificada}',
+      to_jsonb(OLD."contraseña" IS DISTINCT FROM NEW."contraseña"),true);
+  END IF;
+  IF v_old IS NOT DISTINCT FROM v_new THEN
+    IF TG_OP='DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+  END IF;
+
+  IF TG_TABLE_NAME='rol_permisos' THEN
+    v_key:=concat_ws(':',coalesce(v_new->>'rol_id',v_old->>'rol_id'),
+                        coalesce(v_new->>'permiso_id',v_old->>'permiso_id'));
+  ELSIF TG_TABLE_NAME='politicas_stock_bodega' THEN
+    v_key:=concat_ws(':',coalesce(v_new->>'producto_id',v_old->>'producto_id'),
+                        coalesce(v_new->>'bodega_id',v_old->>'bodega_id'));
+  ELSIF TG_TABLE_NAME='configuracion_sistema' THEN
+    v_key:=coalesce(v_new->>'clave',v_old->>'clave');
+  ELSE
+    v_key:=coalesce(v_new->>'id',v_old->>'id');
+  END IF;
+  v_actor:=nullif(current_setting('lwi.actor_usuario_id',true),'')::bigint;
+  v_origen:=coalesce(nullif(current_setting('lwi.origen',true),''),'SQL');
+  INSERT INTO public.auditoria_eventos(
+    usuario_actor_id,actor_bd,origen,tabla,entidad_clave,accion,datos_antes,datos_despues
+  ) VALUES(v_actor,session_user,left(v_origen,60),TG_TABLE_NAME,left(v_key,180),TG_OP,v_old,v_new);
+  IF TG_OP='DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.lwi_f4_auditoria_inmutable()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'La bitacora de auditoria no admite UPDATE ni DELETE'; END $$;
+CREATE TRIGGER trg_f4_auditoria_inmutable BEFORE UPDATE OR DELETE ON public.auditoria_eventos
+ FOR EACH ROW EXECUTE FUNCTION public.lwi_f4_auditoria_inmutable();
+
+-- Auditoría sobre cambios relevantes, sin reescribir historial previo.
+DO $$
+DECLARE t text;
+BEGIN
+ FOREACH t IN ARRAY ARRAY[
+  'rol','usuarios','permisos','rol_permisos','configuracion_sistema',
+  'politicas_stock_bodega','alertas_inventario',
+  'productos','categorias','bodegas',
+  'movimientos','movimiento_detalles','lotes','consumos_lote','devoluciones_lote',
+  'solicitudes','solicitud_detalles','aprobaciones',
+  'ordenes_compra','orden_compra_detalles','facturas_compra',
+  'conteos_fisicos','conteo_detalles','archivos_adjuntos'
+ ] LOOP
+   EXECUTE format('CREATE TRIGGER %I AFTER INSERT OR UPDATE OR DELETE ON public.%I '
+       || 'FOR EACH ROW EXECUTE FUNCTION public.lwi_f4_auditar_cambio()',
+       'trg_f4_auditar_'||t,t);
+ END LOOP;
+END $$;
+
+-- Catálogo de permisos funcionales. Estos nombres sirven para el backend.
+INSERT INTO public.permisos(clave,modulo,descripcion) VALUES
+ ('usuarios.ver','usuarios','Consultar cuentas y roles'),
+ ('usuarios.gestionar','usuarios','Crear, editar y desactivar usuarios'),
+ ('permisos.gestionar','seguridad','Administrar permisos de roles'),
+ ('catalogos.ver','catalogos','Consultar catálogos'),
+ ('catalogos.gestionar','catalogos','Crear o editar productos y catálogos'),
+ ('proveedores.ver','terceros','Consultar proveedores y donantes'),
+ ('proveedores.gestionar','terceros','Administrar terceros y sus roles comerciales'),
+ ('inventario.ver','inventario','Consultar existencias y lotes'),
+ ('inventario.movimientos.crear','inventario','Crear borradores de movimientos'),
+ ('inventario.movimientos.confirmar','inventario','Confirmar movimientos físicos'),
+ ('inventario.valoracion.ver','finanzas','Consultar costos y valoración PEPS'),
+ ('solicitudes.crear','solicitudes','Crear requisiciones'),
+ ('solicitudes.aprobar','solicitudes','Aprobar y rechazar requisiciones'),
+ ('compras.ver','compras','Consultar órdenes y recepciones'),
+ ('compras.gestionar','compras','Crear y emitir órdenes de compra'),
+ ('conteos.gestionar','conteos','Crear, ejecutar y cerrar conteos físicos'),
+ ('ajustes.confirmar','inventario','Confirmar ajustes de inventario'),
+ ('reportes.operativos.ver','reportes','Consultar Kardex y reportes de operaciones'),
+ ('reportes.financieros.ver','reportes','Consultar informes valorizados'),
+ ('reportes.exportar','reportes','Exportar reportes autorizados'),
+ ('alertas.ver','alertas','Consultar alertas'),
+ ('alertas.gestionar','alertas','Actualizar alertas y políticas por bodega'),
+ ('auditoria.ver','auditoria','Consultar el registro de auditoría'),
+ ('configuracion.gestionar','configuracion','Modificar opciones generales y notificaciones'),
+ ('evidencias.gestionar','documentos','Registrar evidencias y consultar su referencia')
+ON CONFLICT (clave) DO NOTHING;
+
+-- Política conservadora: solo Administrador recibe permisos inicialmente.
+-- Los roles restantes se configuran según matriz aprobada por LWI.
+INSERT INTO public.rol_permisos(rol_id,permiso_id)
+SELECT r.id,p.id FROM public.rol r CROSS JOIN public.permisos p
+WHERE r.nombre='Administrador'
+ON CONFLICT (rol_id,permiso_id) DO NOTHING;
+
+-- Defaults propuestos, NO decisiones operativas aprobadas por LWI.
+INSERT INTO public.configuracion_sistema(clave,categoria,valor,descripcion) VALUES
+ ('DIAS_ALERTA_VENCIMIENTO','ALERTAS',to_jsonb(30),'Umbral sugerido en días; requiere validación con LWI'),
+ ('HABILITAR_ALERTAS_INVENTARIO','ALERTAS','true'::jsonb,'Activa la evaluación de alertas'),
+ ('IDIOMA_PREDETERMINADO','INTERFAZ',to_jsonb('es'::text),'Idioma inicial de la aplicación'),
+ ('ZONA_HORARIA','GENERAL',to_jsonb('America/Guatemala'::text),'Zona horaria institucional')
+ON CONFLICT (clave) DO NOTHING;
+
+COMMENT ON FUNCTION public.lwi_f4_usuario_tiene_permiso(BIGINT,VARCHAR)
+ IS 'Verifica autorización funcional en tablas RBAC; la API debe usar actor JWT autenticado';
+COMMENT ON FUNCTION public.lwi_f4_auditar_cambio()
+ IS 'Auditoría desde instalación F4, con exclusión de secretos. actor GUC = contexto no autenticado por PostgreSQL';
+
+-- Sólo ejecutan las funciones mediante triggers o política controlada.
+REVOKE ALL ON FUNCTION public.lwi_f4_auditar_cambio() FROM PUBLIC;
+COMMIT;
+
+
+-- Reportes en tiempo real; solo lecturas y sincronización de alertas
+BEGIN;
+
+-- Candidatas para cada ejecución. Si el producto nunca tuvo stock, crear
+-- politica_stock_bodega para que su stock cero pueda generar alerta.
+CREATE OR REPLACE VIEW public.vw_f4_alertas_candidatas AS
+WITH parametros AS (
+  SELECT
+    coalesce((SELECT (valor #>> '{}')::integer FROM public.configuracion_sistema
+              WHERE clave='DIAS_ALERTA_VENCIMIENTO'),30) AS dias,
+    coalesce((SELECT (valor #>> '{}')::boolean FROM public.configuracion_sistema
+              WHERE clave='HABILITAR_ALERTAS_INVENTARIO'),true) AS habilitadas
+), pares AS (
+  SELECT producto_id,bodega_id FROM public.lotes
+  UNION
+  SELECT producto_id,bodega_id FROM public.politicas_stock_bodega
+), existencias AS (
+  SELECT producto_id,bodega_id,sum(cantidad_disponible)::numeric(24,3) AS cantidad
+  FROM public.lotes GROUP BY producto_id,bodega_id
+)
+SELECT 'STOCK_BAJO'::varchar(25) AS tipo,p.id AS producto_id,b.id AS bodega_id,
+       NULL::bigint AS lote_id,
+       jsonb_build_object('cantidad_disponible',coalesce(e.cantidad,0),
+                          'stock_minimo',coalesce(pol.stock_minimo,p.stock_minimo)) AS contexto
+FROM pares q
+JOIN public.productos p ON p.id=q.producto_id AND p.activo
+JOIN public.bodegas b ON b.id=q.bodega_id AND b.activo
+LEFT JOIN public.politicas_stock_bodega pol ON pol.producto_id=p.id AND pol.bodega_id=b.id
+LEFT JOIN existencias e ON e.producto_id=p.id AND e.bodega_id=b.id
+CROSS JOIN parametros prm
+WHERE prm.habilitadas
+  AND coalesce(pol.activo,true) AND coalesce(pol.alertas_habilitadas,true)
+  AND coalesce(pol.stock_minimo,p.stock_minimo,0)>0
+  AND coalesce(e.cantidad,0)<coalesce(pol.stock_minimo,p.stock_minimo)
+UNION ALL
+SELECT (CASE WHEN l.fecha_vencimiento<CURRENT_DATE THEN 'VENCIDO'
+             ELSE 'VENCIMIENTO_PROXIMO' END)::varchar(25),
+       l.producto_id,l.bodega_id,l.id,
+       jsonb_build_object('cantidad_disponible',l.cantidad_disponible,
+                          'fecha_vencimiento',l.fecha_vencimiento,
+                          'dias_restantes',l.fecha_vencimiento-CURRENT_DATE)
+FROM public.lotes l
+JOIN public.productos p ON p.id=l.producto_id AND p.activo
+JOIN public.bodegas b ON b.id=l.bodega_id AND b.activo
+LEFT JOIN public.politicas_stock_bodega pol
+  ON pol.producto_id=l.producto_id AND pol.bodega_id=l.bodega_id
+CROSS JOIN parametros prm
+WHERE prm.habilitadas AND coalesce(pol.activo,true)
+  AND coalesce(pol.alertas_habilitadas,true)
+  AND l.cantidad_disponible>0 AND l.fecha_vencimiento IS NOT NULL
+  AND l.fecha_vencimiento<=CURRENT_DATE+prm.dias;
+
+-- Sincroniza el historial de alertas con el estado actual (sin borrar registros).
+-- Invocar desde tarea programada o después de confirmación en el backend.
+CREATE OR REPLACE FUNCTION public.lwi_f4_sincronizar_alertas()
+RETURNS TABLE (resueltas integer,creadas integer)
+LANGUAGE plpgsql AS $$
+DECLARE v_resueltas integer:=0; v_creadas integer:=0;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('LWI_F4_ALERTAS'),hashtext('SINCRONIZAR'));
+  UPDATE public.alertas_inventario a SET estado='RESUELTA',resuelta_at=now()
+  WHERE a.estado='ACTIVA' AND NOT EXISTS (
+    SELECT 1 FROM public.vw_f4_alertas_candidatas c
+    WHERE c.tipo=a.tipo AND c.producto_id=a.producto_id
+      AND c.bodega_id=a.bodega_id AND c.lote_id IS NOT DISTINCT FROM a.lote_id
+  );
+  GET DIAGNOSTICS v_resueltas=ROW_COUNT;
+
+  INSERT INTO public.alertas_inventario(tipo,producto_id,bodega_id,lote_id,contexto)
+  SELECT c.tipo,c.producto_id,c.bodega_id,c.lote_id,c.contexto
+  FROM public.vw_f4_alertas_candidatas c
+  WHERE NOT EXISTS (
+    SELECT 1 FROM public.alertas_inventario a WHERE a.estado='ACTIVA'
+      AND a.tipo=c.tipo AND a.producto_id=c.producto_id
+      AND a.bodega_id=c.bodega_id AND a.lote_id IS NOT DISTINCT FROM c.lote_id
+  ) ON CONFLICT DO NOTHING;
+  GET DIAGNOSTICS v_creadas=ROW_COUNT;
+
+  resueltas:=v_resueltas; creadas:=v_creadas;
+  RETURN NEXT;
+END $$;
+
+CREATE OR REPLACE VIEW public.vw_f4_alertas_activas AS
+SELECT a.id,a.tipo,a.producto_id,p.codigo AS codigo_producto,p.nombre AS producto,
+       a.bodega_id,b.nombre AS bodega,a.lote_id,a.contexto,a.detectada_at
+FROM public.alertas_inventario a
+JOIN public.productos p ON p.id=a.producto_id
+JOIN public.bodegas b ON b.id=a.bodega_id
+WHERE a.estado='ACTIVA';
+
+-- KARDEX: detalle POR LOTE. No se deduce la ubicación a partir de la línea
+-- de salida (que puede ser NULL y consumir distintas ubicaciones).
+CREATE OR REPLACE VIEW public.vw_f4_kardex AS
+WITH eventos AS (
+  -- Cada entrada/ajuste positivo origina un lote físico.
+  SELECT m.id AS movimiento_id,m.numero,m.fecha_operacion,m.confirmado_at,
+    m.tipo,m.origen,m.confirmado_por_usuario_id,
+    d.id AS detalle_id,l.id AS lote_id,l.producto_id,l.bodega_id,l.ubicacion_id,
+    1::integer AS orden_evento,
+    d.cantidad::numeric(24,3) AS cantidad_variacion,
+    (d.cantidad*l.costo_unitario)::numeric(26,6) AS valor_variacion,
+    l.costo_unitario
+  FROM public.lotes l
+  JOIN public.movimiento_detalles d ON d.id=l.entrada_detalle_id
+  JOIN public.movimientos m ON m.id=d.movimiento_id
+  WHERE m.estado='CONFIRMADO' AND m.tipo IN ('ENTRADA','AJUSTE_ENTRADA')
+  UNION ALL
+  -- Un despacho puede tener varios consumos por distintos lotes.
+  SELECT m.id,m.numero,m.fecha_operacion,m.confirmado_at,m.tipo,m.origen,
+    m.confirmado_por_usuario_id,d.id,l.id,l.producto_id,l.bodega_id,l.ubicacion_id,
+    2,-c.cantidad,(-c.cantidad*c.costo_unitario)::numeric(26,6),c.costo_unitario
+  FROM public.consumos_lote c
+  JOIN public.lotes l ON l.id=c.lote_id
+  JOIN public.movimiento_detalles d ON d.id=c.salida_detalle_id
+  JOIN public.movimientos m ON m.id=d.movimiento_id
+  WHERE m.estado='CONFIRMADO' AND m.tipo IN ('SALIDA','AJUSTE_SALIDA')
+  UNION ALL
+  -- La devolución recupera cantidad y costo del consumo histórico original.
+  SELECT m.id,m.numero,m.fecha_operacion,m.confirmado_at,m.tipo,m.origen,
+    m.confirmado_por_usuario_id,d.id,l.id,l.producto_id,l.bodega_id,l.ubicacion_id,
+    3,dl.cantidad,(dl.cantidad*dl.costo_unitario)::numeric(26,6),dl.costo_unitario
+  FROM public.devoluciones_lote dl
+  JOIN public.consumos_lote c ON c.id=dl.consumo_lote_id
+  JOIN public.lotes l ON l.id=c.lote_id
+  JOIN public.movimiento_detalles d ON d.id=dl.devolucion_detalle_id
+  JOIN public.movimientos m ON m.id=d.movimiento_id
+  WHERE m.estado='CONFIRMADO' AND m.tipo='DEVOLUCION'
+)
+SELECT e.*,p.codigo AS codigo_producto,p.nombre AS producto,
+  sum(e.cantidad_variacion) OVER (
+    PARTITION BY e.producto_id,e.bodega_id
+    ORDER BY e.fecha_operacion,e.confirmado_at,e.movimiento_id,e.detalle_id,e.lote_id,e.orden_evento
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  )::numeric(26,3) AS saldo_acumulado_producto_bodega,
+  sum(e.valor_variacion) OVER (
+    PARTITION BY e.producto_id,e.bodega_id
+    ORDER BY e.fecha_operacion,e.confirmado_at,e.movimiento_id,e.detalle_id,e.lote_id,e.orden_evento
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  )::numeric(30,6) AS valor_acumulado_producto_bodega
+FROM eventos e JOIN public.productos p ON p.id=e.producto_id;
+
+CREATE OR REPLACE VIEW public.vw_f4_valorizacion_peps AS
+SELECT l.producto_id,p.codigo AS codigo_producto,p.nombre AS producto,
+       p.categoria_id,l.bodega_id,b.nombre AS bodega,
+       sum(l.cantidad_disponible)::numeric(26,3) AS cantidad_disponible,
+       sum(l.cantidad_disponible*l.costo_unitario)::numeric(30,6) AS valor_peps,
+       count(*) FILTER (WHERE l.cantidad_disponible>0) AS lotes_con_saldo,
+       min(l.fecha_recepcion) FILTER (WHERE l.cantidad_disponible>0) AS primera_recepcion_disponible
+FROM public.lotes l
+JOIN public.productos p ON p.id=l.producto_id
+JOIN public.bodegas b ON b.id=l.bodega_id
+GROUP BY l.producto_id,p.codigo,p.nombre,p.categoria_id,l.bodega_id,b.nombre;
+
+-- Consumo por mes/COA/producto: no mezcla unidades de productos diferentes.
+CREATE OR REPLACE VIEW public.vw_f4_consumo_mensual_coa AS
+SELECT date_trunc('month',m.fecha_operacion::timestamp)::date AS mes,
+       coalesce(m.clase_coa_id,p.clase_coa_id) AS clase_coa_id,
+       p.id AS producto_id,p.codigo AS codigo_producto,p.nombre AS producto,
+       m.bodega_id,
+       sum(c.cantidad)::numeric(26,3) AS cantidad_consumida,
+       sum(c.cantidad*c.costo_unitario)::numeric(30,6) AS costo_consumido
+FROM public.consumos_lote c
+JOIN public.movimiento_detalles d ON d.id=c.salida_detalle_id
+JOIN public.movimientos m ON m.id=d.movimiento_id
+JOIN public.productos p ON p.id=d.producto_id
+WHERE m.estado='CONFIRMADO' AND m.tipo='SALIDA'
+GROUP BY date_trunc('month',m.fecha_operacion::timestamp)::date,
+         coalesce(m.clase_coa_id,p.clase_coa_id),p.id,p.codigo,p.nombre,m.bodega_id;
+
+-- Dashboard: agregados independientes para impedir multiplicar costos por JOIN.
+CREATE OR REPLACE VIEW public.vw_f4_dashboard_resumen AS
+SELECT
+ (SELECT count(*) FROM public.productos WHERE activo) AS productos_activos,
+ (SELECT count(DISTINCT producto_id) FROM public.lotes WHERE cantidad_disponible>0) AS productos_con_existencias,
+ (SELECT count(*) FROM public.bodegas WHERE activo) AS bodegas_activas,
+ (SELECT coalesce(sum(cantidad_disponible*costo_unitario),0)::numeric(30,6)
+    FROM public.lotes) AS valor_inventario_peps,
+ (SELECT count(*) FROM public.vw_f4_alertas_candidatas WHERE tipo='STOCK_BAJO') AS alertas_stock_bajo_actuales,
+ (SELECT count(*) FROM public.vw_f4_alertas_candidatas WHERE tipo='VENCIMIENTO_PROXIMO') AS lotes_por_vencer,
+ (SELECT count(*) FROM public.vw_f4_alertas_candidatas WHERE tipo='VENCIDO') AS lotes_vencidos,
+ (SELECT count(*) FROM public.movimientos WHERE estado='CONFIRMADO'
+    AND fecha_operacion=CURRENT_DATE) AS movimientos_confirmados_hoy,
+ (SELECT count(*) FROM public.movimientos WHERE estado='CONFIRMADO' AND tipo='ENTRADA'
+    AND fecha_operacion>=date_trunc('month',CURRENT_DATE)::date
+    AND fecha_operacion<CURRENT_DATE+1) AS entradas_confirmadas_mes,
+ (SELECT count(*) FROM public.movimientos WHERE estado='CONFIRMADO' AND tipo='SALIDA'
+    AND fecha_operacion>=date_trunc('month',CURRENT_DATE)::date
+    AND fecha_operacion<CURRENT_DATE+1) AS salidas_confirmadas_mes,
+ (SELECT count(*) FROM public.solicitudes WHERE estado='PENDIENTE') AS solicitudes_pendientes,
+ (SELECT count(*) FROM public.ordenes_compra WHERE estado IN ('EMITIDA','PARCIAL')) AS ordenes_compra_abiertas;
+
+CREATE OR REPLACE VIEW public.vw_f4_dashboard_categorias AS
+WITH stock_producto AS (
+ SELECT producto_id,
+   sum(cantidad_disponible)::numeric(26,3) AS cantidad,
+   sum(cantidad_disponible*costo_unitario)::numeric(30,6) AS valor
+ FROM public.lotes GROUP BY producto_id
+)
+SELECT c.id AS categoria_id,c.codigo AS codigo_categoria,c.nombre AS categoria,
+  count(p.id) FILTER (WHERE p.activo) AS productos_activos,
+  count(p.id) FILTER (WHERE p.activo AND coalesce(s.cantidad,0)>0) AS productos_con_stock,
+  coalesce(sum(s.valor) FILTER (WHERE p.activo),0)::numeric(30,6) AS valor_peps_categoria
+FROM public.categorias c
+LEFT JOIN public.productos p ON p.categoria_id=c.id
+LEFT JOIN stock_producto s ON s.producto_id=p.id
+GROUP BY c.id,c.codigo,c.nombre;
+
+CREATE OR REPLACE VIEW public.vw_f4_dashboard_movimientos_recientes AS
+SELECT m.id AS movimiento_id,m.numero,m.tipo,m.origen,m.fecha_operacion,m.confirmado_at,
+       m.bodega_id,m.confirmado_por_usuario_id,
+       count(d.id) AS renglones,
+       count(DISTINCT d.producto_id) AS productos_distintos
+FROM public.movimientos m
+JOIN public.movimiento_detalles d ON d.movimiento_id=m.id
+WHERE m.estado='CONFIRMADO'
+GROUP BY m.id,m.numero,m.tipo,m.origen,m.fecha_operacion,m.confirmado_at,
+         m.bodega_id,m.confirmado_por_usuario_id;
+
+COMMENT ON VIEW public.vw_f4_kardex IS 'Kardex por lote y saldo acumulado de producto+bodega; ordenar por fecha_operacion, confirmado_at, movimiento_id, detalle_id, lote_id';
+COMMENT ON VIEW public.vw_f4_valorizacion_peps IS 'Valor actual por capas PEPS; costo por lote, sin sumar unidades heterogéneas en el dashboard';
+COMMENT ON VIEW public.vw_f4_dashboard_resumen IS 'Indicadores vivos, no materializados. El valor requiere costos históricos fiables y GTQ homogéneo';
+COMMENT ON FUNCTION public.lwi_f4_sincronizar_alertas() IS 'Cerrar y crear alertas derivadas; requiere programador o llamada explícita desde API';
+COMMIT;
