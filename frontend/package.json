@@ -8,7 +8,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:sprint4": "node --test sprint4.test.mjs"
+    "test:sprint4": "node --test sprint4.test.mjs",
+    "dev:sprint5": "vite --mode sprint5 --port 5174 --strictPort",
+    "test:sprint5": "node --test sprint5-ui.test.mjs",
+    "test:accounts:sprint5": "node ../backend/scripts/test-sprint5-accounts.cjs frontend"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

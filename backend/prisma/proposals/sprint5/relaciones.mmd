@@ -1,0 +1,36 @@
+erDiagram
+  ROL ||--o{ USUARIO : asigna
+  USUARIO o|--o{ BODEGA : responsable
+  PERSONA o|--o| TERCERO : identidad
+  EMPRESA o|--o| TERCERO : identidad
+  PERSONA o|--o{ EMPRESA : propietario_opcional
+  TERCERO ||--o{ TERCERO_ROL : asume
+  TERCERO_ROL ||--o| CUENTA_BANCARIA_TERCERO : proveedor_opcional
+  CATEGORIA ||--o{ SUBCATEGORIA : agrupa
+  CATEGORIA ||--o{ PRODUCTO : clasifica
+  SUBCATEGORIA o|--o{ PRODUCTO : pertenece_a_misma_categoria
+  MARCA o|--o{ PRODUCTO : marca_opcional
+  UNIDAD_MEDIDA o|--o{ PRODUCTO : mide
+  TIPO_INVENTARIO o|--o{ PRODUCTO : tipifica
+  CLASE_COA o|--o{ PRODUCTO : clasificacion_contable_independiente
+  TERCERO {
+    bigint id PK
+    bigint persona_id FK "XOR: exactamente una identidad"
+    bigint empresa_id FK "XOR: exactamente una identidad"
+  }
+  TERCERO_ROL {
+    bigint tercero_id PK,FK
+    varchar rol PK "PROVEEDOR o DONANTE"
+    varchar metodo_pago "Opcional, solo PROVEEDOR"
+    int dias_credito "NULL, 0, 15, 30, 60"
+    varchar beneficiario_cheque "Opcional, solo CHEQUE"
+  }
+  PRODUCTO {
+    bigint id PK
+    varchar codigo UK
+    bigint categoria_id FK
+    bigint subcategoria_id FK "FK compuesta con categoria_id"
+    bigint marca_id FK "Opcional"
+    bigint tipo_inventario_id FK "Independiente"
+    decimal stock_minimo "Umbral, no saldo"
+  }

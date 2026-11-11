@@ -1,4 +1,19 @@
 .catalog-language { max-width: 180px; margin-bottom: 16px; }
+.account-modal textarea { width: 100%; padding: 10px 12px; border: 1px solid #d7e2ee; border-radius: 5px; color: #344054; font: inherit; resize: vertical; }
+.catalog-form-section { margin: 12px 0 0; padding-top: 16px; border-top: 1px solid #e4ebf3; color: #001d39; font-size: 17px; }
+.catalog-checkbox { flex-direction: row !important; align-items: center; }
+.catalog-checkbox input { width: 20px; min-height: 20px; flex-shrink: 0; }
+.catalog-brand-filters { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.catalog-brand-form { margin: 18px 0; }
+.account-modal .lw-table-wrap { margin-top: 18px; }
+.account-modal .account-table { min-width: 0; }
+.account-modal .account-table th, .account-modal .account-table td { padding: 12px; text-align: left; }
+.catalog-fields [aria-invalid="true"] { border-color: #b42318; }
+.inventory-page .supplier-page-size { flex-direction: row; align-items: center; }
+.inventory-page .supplier-page-size select { width: 80px; }
+.suppliers-page .catalog-filters > button:first-of-type { grid-column: auto; }
+.suppliers-page .catalog-filters > button:last-of-type { grid-column: auto; }
+@media(max-width: 560px) { .catalog-brand-filters { grid-template-columns: 1fr; } }
 .catalog-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: end; }
 .catalog-filters > label:first-child { grid-column: span 2; }
 .catalog-fields { border: 0; padding: 0; margin: 0; display: grid; gap: 16px; min-width: 0; }

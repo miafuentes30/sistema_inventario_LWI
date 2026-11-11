@@ -1,0 +1,408 @@
+{
+  "stage": "Sprint 5 isolated restoration and migration rehearsal",
+  "status": "PASSED",
+  "runId": "2026-11-11T03-08-41-344Z",
+  "principalDatabase": "sistema_inventario",
+  "testDatabase": "sistema_inventario_sprint5_test",
+  "backupSha256": "7c4a48b380a19659b5f8452abf8dfc2ecd1da7cc49c7fff5191b3e93f496b5e9",
+  "restoration": {
+    "passed": true,
+    "tables": [
+      "rol",
+      "usuarios"
+    ],
+    "dataSchemaAndSequencesMatch": true,
+    "counts": [
+      {
+        "table": "rol",
+        "rows": "4"
+      },
+      {
+        "table": "usuarios",
+        "rows": "1"
+      }
+    ]
+  },
+  "baselineMatchesRestoredStructure": true,
+  "migrations": {
+    "passed": true,
+    "baselineMarkedOnly": true,
+    "appliedOnlyAdditive": true,
+    "createdTables": [
+      "bodegas",
+      "categorias",
+      "clases_coa",
+      "cuentas_bancarias_tercero",
+      "empresas",
+      "marcas",
+      "personas",
+      "productos",
+      "subcategorias",
+      "tercero_roles",
+      "terceros",
+      "tipos_inventario",
+      "unidades_medida"
+    ],
+    "totalTablesIncludingHistory": 16,
+    "expectedConstraintsVerified": 48,
+    "expectedIndexesVerified": 37,
+    "updateTriggersVerified": 13,
+    "history": [
+      {
+        "migration_name": "000_baseline",
+        "checksum": "a5e1cc511b8c7094a902216be454131e53c7383e71ee32f4dec02351eb9ac07b",
+        "finished": true,
+        "not_rolled_back": true
+      },
+      {
+        "migration_name": "001_catalogos_terceros",
+        "checksum": "4d50715346cb95d71b12335a40c657b27307d53cebdf31c7339e710078f5d29a",
+        "finished": true,
+        "not_rolled_back": true
+      }
+    ]
+  },
+  "prisma": {
+    "schemaValid": true,
+    "noUnexpectedStructuralDrift": true,
+    "clientGeneratedInIsolatedDirectory": true
+  },
+  "testsPassed": 67,
+  "testsFailed": 0,
+  "tests": [
+    {
+      "name": "Prisma creates a person with separate names and institutional contact fields",
+      "passed": true
+    },
+    {
+      "name": "Person rejects empty names",
+      "passed": true
+    },
+    {
+      "name": "Person requires surname",
+      "passed": true
+    },
+    {
+      "name": "Person NIT rejects normalized duplicates",
+      "passed": true
+    },
+    {
+      "name": "Person NIT rejects separator-only value",
+      "passed": true
+    },
+    {
+      "name": "Individual company accepts primary name only and no owner",
+      "passed": true
+    },
+    {
+      "name": "Corporation accepts primary name only without invented suffix",
+      "passed": true
+    },
+    {
+      "name": "Company accepts distinct secondary name",
+      "passed": true
+    },
+    {
+      "name": "Company rejects blank secondary name when provided",
+      "passed": true
+    },
+    {
+      "name": "Company rejects blank primary name",
+      "passed": true
+    },
+    {
+      "name": "Company rejects unsupported type",
+      "passed": true
+    },
+    {
+      "name": "Individual owner can reference a real person later",
+      "passed": true
+    },
+    {
+      "name": "Owner cannot reference an unknown person",
+      "passed": true
+    },
+    {
+      "name": "Corporation rejects the individual-owner field",
+      "passed": true
+    },
+    {
+      "name": "Company NIT rejects normalized duplicates",
+      "passed": true
+    },
+    {
+      "name": "Person and individual business may share NIT as explicitly proposed",
+      "passed": true
+    },
+    {
+      "name": "Person identity is linked to one third party",
+      "passed": true
+    },
+    {
+      "name": "Both company types can be third parties",
+      "passed": true
+    },
+    {
+      "name": "Third party requires an identity",
+      "passed": true
+    },
+    {
+      "name": "Third party cannot reference both identities",
+      "passed": true
+    },
+    {
+      "name": "Third party rejects unknown identity",
+      "passed": true
+    },
+    {
+      "name": "Third party cannot duplicate a person's identity",
+      "passed": true
+    },
+    {
+      "name": "Third party supports supplier and donor roles together",
+      "passed": true
+    },
+    {
+      "name": "Role cannot be repeated for a third party",
+      "passed": true
+    },
+    {
+      "name": "Role rejects unsupported value",
+      "passed": true
+    },
+    {
+      "name": "Role rejects unknown third party",
+      "passed": true
+    },
+    {
+      "name": "Payment method rejects unsupported value",
+      "passed": true
+    },
+    {
+      "name": "Credit term rejects negative value",
+      "passed": true
+    },
+    {
+      "name": "Donor cannot have supplier payment conditions",
+      "passed": true
+    },
+    {
+      "name": "Cheque beneficiary is rejected for transfer",
+      "passed": true
+    },
+    {
+      "name": "Bank account links to supplier and preserves leading zeros",
+      "passed": true
+    },
+    {
+      "name": "Bank account cannot reference donor role",
+      "passed": true
+    },
+    {
+      "name": "Bank account cannot reference missing supplier role",
+      "passed": true
+    },
+    {
+      "name": "Bank rejects blank account number",
+      "passed": true
+    },
+    {
+      "name": "Bank relation enforces at most one account per supplier",
+      "passed": true
+    },
+    {
+      "name": "Changing to cheque preserves bank history and permits beneficiary",
+      "passed": true
+    },
+    {
+      "name": "Confirmed credit choices 0, 15, 30, 60 and unknown are supported",
+      "passed": true
+    },
+    {
+      "name": "Category and subcategory can be created with a real relation",
+      "passed": true
+    },
+    {
+      "name": "Subcategory cannot refer to unknown category",
+      "passed": true
+    },
+    {
+      "name": "Category names cannot be case/space duplicates",
+      "passed": true
+    },
+    {
+      "name": "Subcategory names cannot repeat within a category",
+      "passed": true
+    },
+    {
+      "name": "Same subcategory label can exist in another category",
+      "passed": true
+    },
+    {
+      "name": "Brand can be created and read through generated Prisma client",
+      "passed": true
+    },
+    {
+      "name": "Brand rejects case/space duplicates",
+      "passed": true
+    },
+    {
+      "name": "Inactive brand still prevents duplicate identity",
+      "passed": true
+    },
+    {
+      "name": "Brand rejects empty name",
+      "passed": true
+    },
+    {
+      "name": "Unit stores fraction policy and independent inventory type/COA catalogs",
+      "passed": true
+    },
+    {
+      "name": "Unit rejects normalized duplicate code",
+      "passed": true
+    },
+    {
+      "name": "Inventory type rejects normalized duplicate name",
+      "passed": true
+    },
+    {
+      "name": "Warehouse accepts optional responsible user",
+      "passed": true
+    },
+    {
+      "name": "Warehouse rejects unknown responsible user",
+      "passed": true
+    },
+    {
+      "name": "Warehouse rejects normalized duplicate code",
+      "passed": true
+    },
+    {
+      "name": "Product links all catalogs and preserves decimal minimum threshold",
+      "passed": true
+    },
+    {
+      "name": "Product accepts no brand and incomplete catalogs without fabricated values",
+      "passed": true
+    },
+    {
+      "name": "Product rejects subcategory from another category",
+      "passed": true
+    },
+    {
+      "name": "Product rejects unknown category",
+      "passed": true
+    },
+    {
+      "name": "Product rejects unknown brand",
+      "passed": true
+    },
+    {
+      "name": "Product rejects unknown unit",
+      "passed": true
+    },
+    {
+      "name": "Product rejects unknown inventory type",
+      "passed": true
+    },
+    {
+      "name": "Product rejects negative minimum threshold",
+      "passed": true
+    },
+    {
+      "name": "Product rejects NaN minimum threshold",
+      "passed": true
+    },
+    {
+      "name": "Product rejects normalized duplicate code",
+      "passed": true
+    },
+    {
+      "name": "Referenced brand cannot be deleted",
+      "passed": true
+    },
+    {
+      "name": "Referenced category cannot be deleted",
+      "passed": true
+    },
+    {
+      "name": "Bank reference protects supplier role from deletion",
+      "passed": true
+    },
+    {
+      "name": "Timestamp triggers override spoofed update time on all 13 new tables",
+      "passed": true
+    },
+    {
+      "name": "Failed operation can be rolled back atomically without partial catalog row",
+      "passed": true
+    }
+  ],
+  "fixturePrefix": "S5TEST_mwbjkfu4",
+  "fixtureRowsRolledBack": true,
+  "newTableRowsAfterTests": [
+    {
+      "table": "bodegas",
+      "rows": "0"
+    },
+    {
+      "table": "categorias",
+      "rows": "0"
+    },
+    {
+      "table": "clases_coa",
+      "rows": "0"
+    },
+    {
+      "table": "cuentas_bancarias_tercero",
+      "rows": "0"
+    },
+    {
+      "table": "empresas",
+      "rows": "0"
+    },
+    {
+      "table": "marcas",
+      "rows": "0"
+    },
+    {
+      "table": "personas",
+      "rows": "0"
+    },
+    {
+      "table": "productos",
+      "rows": "0"
+    },
+    {
+      "table": "subcategorias",
+      "rows": "0"
+    },
+    {
+      "table": "tercero_roles",
+      "rows": "0"
+    },
+    {
+      "table": "terceros",
+      "rows": "0"
+    },
+    {
+      "table": "tipos_inventario",
+      "rows": "0"
+    },
+    {
+      "table": "unidades_medida",
+      "rows": "0"
+    }
+  ],
+  "principalUnchanged": true,
+  "principalMigrationExecuted": false,
+  "activeSchemaEnvAndClientUnchanged": true,
+  "resumedAfterContentVerification": true,
+  "resolvedProblems": [
+    "Initial isolated client generation could not resolve @prisma/client from the external workspace. A temporary schema under backend now resolves the installed generator and writes the client into an ignored isolated directory. No migration or model change was needed."
+  ],
+  "remainingProblems": [],
+  "fullReportRelativePath": ".local-backups/sprint5-validation/2026-11-11T03-08-41-344Z/report.json",
+  "approvalBoundary": "Isolated rehearsal only; no authorization to deploy to principal."
+}

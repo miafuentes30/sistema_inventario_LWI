@@ -1,5 +1,7 @@
 # Backend - Sistema de Inventario LWI
 
+Integración Sprint 5 exclusivamente en base aislada: [guía de ejecución, endpoints y resultados](../docs/SPRINT_5_INTEGRACION.md).
+
 Backend del módulo de **login** desarrollado en **Node.js + Express usando JavaScript**.
 
 ## Tecnologías

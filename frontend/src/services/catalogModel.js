@@ -3,12 +3,14 @@ export const supplierFields = {
   sole: ["businessName", "socialName"],
   company: ["tradeName", "legalName"],
 };
-export const emptyProduct = { code: "", description: "", category: "", inventoryType: "", unit: "", minimum: "", cost: "", active: true };
-export const emptySupplier = { type: "", firstName: "", lastName: "", businessName: "", socialName: "", tradeName: "", legalName: "", active: true };
+export const emptyProduct = { code: "", name: "", description: "", categoryId: "", subcategoryId: "", inventoryTypeId: "", unitId: "", brandId: "", minimum: "", active: true };
+export const emptySupplier = { type: "", firstName: "", lastName: "", businessName: "", socialName: "", tradeName: "", legalName: "",
+  address: "", municipality: "", country: "", email: "", nit: "", contactName: "", phone: "", postalCode: "",
+  paymentMethod: "", creditDays: "", chequeBeneficiary: "", bankAccount: null, active: true };
 export const normalize = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 export function validProduct(form) {
-  return ["code", "description", "category", "inventoryType", "unit"].every(key => String(form[key] ?? "").trim()) &&
-    ["minimum", "cost"].every(key => String(form[key] ?? "").trim() !== "" && Number.isFinite(Number(form[key])) && Number(form[key]) >= 0);
+  return ["code", "name", "categoryId"].every(key => String(form[key] ?? "").trim()) &&
+    (form.minimum === "" || form.minimum === null || /^\d{1,15}(\.\d{1,3})?$/.test(String(form.minimum)));
 }
 export function validSupplier(form) {
   const fields = supplierFields[form.type];
@@ -17,7 +19,7 @@ export function validSupplier(form) {
 export function supplierNames(form) { return (supplierFields[form.type] || []).map(key => form[key] || ""); }
 export function filterRecords(items, filters, suppliers, language) {
   return items.filter(item => {
-    const names = suppliers ? Object.values(supplierFields).flat().map(key => item[key]) : [item.code, item.description];
+    const names = suppliers ? Object.values(supplierFields).flat().map(key => item[key]) : [item.code, item.name, item.description];
     return names.some(value => normalize(value).includes(normalize(filters.search))) &&
       (!filters.status || String(item.active) === filters.status) &&
       (!filters.type || item[suppliers ? "type" : "inventoryType"] === filters.type) &&

@@ -11,7 +11,11 @@
     "prisma:generate": "prisma generate",
     "prisma:pull": "prisma db pull",
     "prisma:studio": "prisma studio",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "dev:sprint5": "node scripts/start-sprint5.cjs",
+    "test:sprint5": "node --test sprint5.integration.test.cjs sprint5-boundary.test.cjs",
+    "prisma:generate:sprint5": "node scripts/generate-sprint5.cjs",
+    "test:accounts:sprint5": "node scripts/test-sprint5-accounts.cjs"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

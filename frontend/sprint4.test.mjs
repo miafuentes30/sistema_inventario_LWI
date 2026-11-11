@@ -4,6 +4,7 @@ import { JSDOM } from "jsdom";
 import { createServer } from "vite";
 import { emptySupplier, emptyProduct, validProduct, validSupplier, filterRecords, supplierNames } from "./src/services/catalogModel.js";
 import { sprintTranslations as translations } from "./src/context/sprintTranslations.js";
+import { sprint5Translations } from "./src/context/sprint5Translations.js";
 import { frenchCopy, frenchAuth } from "./src/context/frenchTranslations.js";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -45,10 +46,11 @@ test("Validation, separate supplier names, search, sorting and translations", ()
     for (const search of ["AGUA", "perez", "servicios"]) assert.equal(filterRecords(items, { search }, true, lang).length, 1);
     assert.deepEqual(Object.keys(translations[lang]), Object.keys(translations.es));
   }
-  const product = { ...emptyProduct, code: "P1", description: "Pump", category: "Tools", inventoryType: "Equipment", unit: "Unit", minimum: "0", cost: "12.50" };
+  const product = { ...emptyProduct, code: "P1", name: "Pump", description: "Pump", categoryId: "1", category: "Tools", inventoryType: "Equipment", unit: "Unit", minimum: "0" };
   assert.equal(validProduct(product), true);
-  for (const cost of ["", " ", "-1", "Infinity", "abc"]) assert.equal(validProduct({ ...product, cost }), false);
+  for (const minimum of [" ", "-1", "Infinity", "abc", "1.1234"]) assert.equal(validProduct({ ...product, minimum }), false);
   assert.equal("stock" in emptyProduct, false);
+  assert.equal("cost" in emptyProduct, false);
   assert.equal(filterRecords([product], { search: "pump", category: "Tools", type: "Equipment", status: "true" }, false, "en").length, 1);
 });
 test("DOM navigation, dynamic forms, languages, detail and existing screens; no database", { timeout: 60000 }, async () => {
@@ -63,7 +65,22 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
   sessionStorage.setItem("lwi_session", JSON.stringify({ token, usuario: user }));
   const originalFetch = globalThis.fetch;
   const calls = [];
-  globalThis.fetch = async (url, options) => { if (!String(url).includes("/api/")) return originalFetch(url, options); calls.push(options?.method || "GET"); return { ok: true, json: async () => ({ success: true, data: String(url).includes("/usuarios/roles") ? [] : String(url).includes("/usuarios") ? { usuarios: [], total: 0, pagina: 1, limite: 10, indicadores: {} } : user }) }; };
+  const savedSuppliers = [];
+  globalThis.fetch = async (url, options) => {
+    if (!String(url).includes("/api/")) return originalFetch(url, options);
+    const path = new URL(url).pathname;
+    const method = options?.method || "GET"; calls.push(method);
+    let data = user, status = 200;
+    if (path.startsWith("/api/catalogos/")) data = [];
+    else if (path === "/api/productos" || path === "/api/marcas") data = { items: [], total: 0, indicadores: {} };
+    else if (path.startsWith("/api/productos/")) { status = 404; }
+    else if (path === "/api/proveedores") {
+      if (method === "POST") { data = { ...JSON.parse(options.body), id: String(savedSuppliers.length + 1) }; savedSuppliers.push(data); }
+      else data = { items: savedSuppliers, total: savedSuppliers.length, indicadores: {} };
+    } else if (path === "/api/usuarios/roles") data = [];
+    else if (path === "/api/usuarios") data = { usuarios: [], total: 0, pagina: 1, limite: 10, indicadores: {} };
+    return { ok: status === 200, status, json: async () => status === 200 ? { success: true, data } : { success: false, code: "NOT_FOUND" } };
+  };
   const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", ssr: { noExternal: ["react-router-dom", "react-router"], resolve: { conditions: ["module-sync", "import", "development"] } } });
   const React = await import("react"); const { act } = React;
   const { createRoot } = await import("react-dom/client"); const { Simulate } = await import("react-dom/test-utils");
@@ -81,9 +98,9 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
     await act(async () => root.render(React.createElement(BrowserRouter, null, React.createElement(AuthProvider, null, React.createElement(LanguageProvider, null, React.createElement(App))))));
     assert.equal(document.querySelector("main h1").textContent, translations.es.inventory);
     assert.equal(document.querySelectorAll(".catalog-stats article").length, 5);
-    assert.equal(document.querySelectorAll("thead th").length, 10);
+    assert.equal(document.querySelectorAll("thead th").length, 9);
     assert.equal(document.querySelector(".catalog-language"), null);
-    await click(button(translations.es.newProduct)); assert.equal(document.querySelectorAll("dialog input").length, 7);
+    await click(button(translations.es.newProduct)); assert.equal(document.querySelectorAll("dialog input").length, 3);
     await act(async () => Simulate.submit(document.querySelector("dialog form")));
     assert.ok(document.querySelector('[role="alert"]'));
     await click(document.querySelector("dialog .account-modal-head button"));
@@ -92,7 +109,7 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
       await route("/configuracion");
       await change(document.querySelector(".settings-preferences select"), lang);
       await route("/proveedores");
-      const t = translations[lang];
+      const t = { ...translations[lang], ...sprint5Translations[lang] };
       assert.equal(document.documentElement.lang, lang);
       assert.equal(document.querySelector("main h1").textContent, t.suppliers);
       await click(button(t.newSupplier)); await change(field(t.type), "person"); assert.ok(field(t.firstName)); assert.ok(field(t.lastName));
@@ -101,11 +118,10 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
       await change(field(t.type), "company"); assert.ok(field(t.tradeName)); assert.equal(field(t.legalName).required, false);
       await change(field(t.tradeName), "Water");
       await act(async () => Simulate.submit(document.querySelector("dialog form")));
-      assert.equal(document.querySelector('dialog [role="status"]').textContent, t.valid);
-      await click(document.querySelector("dialog .account-modal-head button"));
+      assert.equal(document.querySelector('[role="status"]').textContent, t.saved);
       await route("/inventario/test-unconnected");
       assert.equal(document.querySelector("main h1").textContent, t.detail);
-      assert.equal(document.querySelectorAll("dd").length, 9);
+      assert.equal(document.querySelectorAll("dd").length, 11);
       assert.ok([...document.querySelectorAll("dd")].every(el => el.textContent === "\u2014"));
       await route("/proveedores");
     }
@@ -130,7 +146,7 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
     assert.ok(document.querySelector("main").textContent.includes("Sécurité du compte"));
     await route("/proveedores");
     assert.equal(document.querySelectorAll(".supplier-stats article").length, 4);
-    assert.equal(document.querySelector(".supplier-empty h2").textContent, translations.fr.supplierEmpty);
+    assert.ok(document.querySelector("tbody").textContent.includes("Water"));
     await change(document.querySelector(".supplier-page-size select"), "25");
     assert.equal(document.querySelector(".supplier-page-size select").value, "25");
     await click(button(translations.fr.applyFilters));
@@ -145,6 +161,6 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
     assert.equal(document.querySelector("h1").textContent, "Mot de passe oublié ?");
     await act(async () => Simulate.submit(document.querySelector(".login-form")));
     assert.equal(document.querySelector('[role="alert"]').textContent, frenchAuth.invalidEmail);
-    assert.ok(calls.every(method => method === "GET"));
+    assert.equal(calls.filter(method => method === "POST").length, 3);
   } finally { await act(async () => root.unmount()); await vite.close(); globalThis.fetch = originalFetch; dom.window.close(); }
 });

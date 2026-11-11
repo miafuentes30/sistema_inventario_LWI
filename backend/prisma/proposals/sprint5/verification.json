@@ -1,0 +1,51 @@
+{
+  "proposalOnly": true,
+  "inspectedAtUtc": "2026-11-11T02:59:20.501Z",
+  "database": "sistema_inventario",
+  "backupVerified": true,
+  "backupRelativeDirectory": ".local-backups/sprint5/2026-11-11T02-54-51-251Z",
+  "backupSha256": "7c4a48b380a19659b5f8452abf8dfc2ecd1da7cc49c7fff5191b3e93f496b5e9",
+  "backupRestoreExecuted": false,
+  "sourceCounts": [
+    {
+      "table": "rol",
+      "rows": "4"
+    },
+    {
+      "table": "usuarios",
+      "rows": "1"
+    }
+  ],
+  "sourceMatchesBackup": true,
+  "liveSchemaMatchesActivePrisma": true,
+  "prismaSchemaValidated": true,
+  "createdTables": [
+    "personas",
+    "empresas",
+    "terceros",
+    "tercero_roles",
+    "cuentas_bancarias_tercero",
+    "categorias",
+    "subcategorias",
+    "marcas",
+    "unidades_medida",
+    "tipos_inventario",
+    "clases_coa",
+    "productos",
+    "bodegas"
+  ],
+  "newTableCount": 13,
+  "accountTableAlterations": false,
+  "destructiveStatements": false,
+  "dataLoadStatements": false,
+  "activeSchemaSha256": "5c8e718ead979f807357dcf58ddbe96ee02ac101e917baf015a9abeaec857411",
+  "proposalSchemaSha256": "7e6efe624834d196c444519ac85f7ad925660902f2b554010c4029700f221a20",
+  "baselineSqlSha256": "a5e1cc511b8c7094a902216be454131e53c7383e71ee32f4dec02351eb9ac07b",
+  "additiveSqlSha256": "4d50715346cb95d71b12335a40c657b27307d53cebdf31c7339e710078f5d29a",
+  "databaseMigrationApplied": false,
+  "databaseIntegrityTestsExecuted": false,
+  "limitations": [
+    "SQL execution and restoration deliberately deferred to an isolated database after approval.",
+    "CHECK/expression-index/trigger behavior has not been verified by execution."
+  ]
+}

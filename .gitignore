@@ -6,6 +6,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.sprint5.example
 
 # Builds
 dist/
@@ -37,6 +38,8 @@ pnpm-debug.log*
 Thumbs.db
 
 # Local databases
+.local-backups/
+backend/.sprint5-isolated/
 *.db
 *.db-journal
 *.sqlite

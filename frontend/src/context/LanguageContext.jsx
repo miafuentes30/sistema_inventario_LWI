@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 import { frenchAuth, frenchCopy } from "./frenchTranslations";
 import { sprintTranslations } from "./sprintTranslations";
+import { sprint5Translations } from "./sprint5Translations";
 
 const translations = {
   fr: frenchAuth,
@@ -75,7 +76,7 @@ export function LanguageProvider({ children }) {
     };
     return translate(en);
   };
-  return <LanguageContext.Provider value={{ language, setLanguage, copy, t: key => sprintTranslations[language]?.[key] ?? translations[language]?.[key] ?? translations.es[key] ?? key }}>{children}</LanguageContext.Provider>;
+  return <LanguageContext.Provider value={{ language, setLanguage, copy, t: key => sprint5Translations[language]?.[key] ?? sprintTranslations[language]?.[key] ?? translations[language]?.[key] ?? translations.es[key] ?? key }}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage() {
