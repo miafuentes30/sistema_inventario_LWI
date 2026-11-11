@@ -311,7 +311,7 @@ export default function Users() {
             {loading ? "?" : (data?.total ?? "?")}
           </span>
         </div>
-        <div className="lw-table-wrap">
+        <div className="lw-table-wrap" tabIndex={0} role="region" aria-label={c("Usuarios", "Users")}>
           <table className="account-table">
             <thead>
               <tr>

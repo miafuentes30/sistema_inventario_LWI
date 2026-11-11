@@ -126,6 +126,14 @@ export default function Home() {
   const profileRef = useRef(null);
   const profileButton = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [compact, setCompact] = useState(() => window.innerWidth <= 820);
+  const sidebarRef = useRef(null);
+  const menuButton = useRef(null);
+  useEffect(() => {
+    const resize = () => { setCompact(window.innerWidth <= 820); };
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -133,8 +141,16 @@ export default function Home() {
     if (!mobileOpen) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const panel = sidebarRef.current;
+    panel?.querySelector("button")?.focus();
     const escape = event => {
       if (event.key === "Escape") setMobileOpen(false);
+      if (event.key === "Tab") {
+        const buttons = [...panel.querySelectorAll("button:not(:disabled),a[href]")];
+        const first = buttons[0], last = buttons.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
     };
     const resize = () => {
       if (window.innerWidth > 820) setMobileOpen(false);
@@ -145,6 +161,7 @@ export default function Home() {
       document.body.style.overflow = previous;
       document.removeEventListener("keydown", escape);
       window.removeEventListener("resize", resize);
+      menuButton.current?.focus();
     };
   }, [mobileOpen]);
   useEffect(() => {
@@ -223,15 +240,15 @@ export default function Home() {
     linkEn: "View details"
   }];
   return <div className={`lw-app ${collapsed ? "lw-collapsed" : ""}`}>
-      {mobileOpen && <button className="lw-overlay" aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />}
-      <aside className={`lw-sidebar ${mobileOpen ? "lw-sidebar-open" : ""}`}>
+      {mobileOpen && <button className="lw-overlay" tabIndex={-1} aria-label={c("Cerrar menú", "Close menu")} onClick={() => setMobileOpen(false)} />}
+      <aside id="main-navigation" ref={sidebarRef} inert={compact && !mobileOpen ? "" : undefined} role={mobileOpen ? "dialog" : undefined} aria-modal={mobileOpen ? true : undefined} aria-label={c("Menú principal", "Main menu")} className={`lw-sidebar ${mobileOpen ? "lw-sidebar-open" : ""}`}>
         <div className="lw-brand">
           <img src={logo} alt="Living Water International" />
           <div>
             <strong>LIVING WATER</strong>
             <span>Guatemala</span>
           </div>
-          <button className="lw-close-menu" aria-label="Cerrar menú" onClick={() => setMobileOpen(false)}>
+          <button className="lw-close-menu" aria-label={c("Cerrar menú", "Close menu")} onClick={() => setMobileOpen(false)}>
             <X size={19} />
           </button>
         </div>
@@ -254,10 +271,10 @@ export default function Home() {
           </p>
         </div>
       </aside>
-      <div className="lw-main">
+      <div className="lw-main" inert={mobileOpen ? "" : undefined}>
         <header className="lw-topbar">
           <div className="lw-top-left">
-            <button className="lw-menu-btn" aria-label={c("Abrir menú", "Open menu")} onClick={() => {
+            <button ref={menuButton} className="lw-menu-btn" aria-controls="main-navigation" aria-expanded={compact ? mobileOpen : !collapsed} aria-label={c("Abrir menú", "Open menu")} onClick={() => {
             if (window.innerWidth <= 820) setMobileOpen(true);else setCollapsed(v => !v);
           }}>
               <Menu size={25} />
@@ -356,7 +373,7 @@ export default function Home() {
                     {c("Ver todos", "View all")} <ArrowRight size={17} />
                   </button>
                 </div>
-                <div className="lw-table-wrap">
+                <div className="lw-table-wrap" tabIndex={0} role="region" aria-label={c("Movimientos", "Movements")}>
                   <table>
                     <thead>
                       <tr>
@@ -404,7 +421,7 @@ export default function Home() {
                     {c("Ver todos", "View all")} <ArrowRight size={17} />
                   </button>
                 </div>
-                <div className="lw-table-wrap">
+                <div className="lw-table-wrap" tabIndex={0} role="region" aria-label={c("Inventario", "Inventory")}>
                   <table>
                     <thead>
                       <tr>

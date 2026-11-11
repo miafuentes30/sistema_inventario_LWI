@@ -79,6 +79,8 @@ export default function Login() {
             value={correo}
             onChange={(event) => setCorreo(event.target.value)}
             autoComplete="email"
+            aria-invalid={!!error}
+            aria-describedby={error ? "login-error" : undefined}
             required
           />
         </label>
@@ -95,6 +97,8 @@ export default function Login() {
             value={contrasena}
             onChange={(event) => setContrasena(event.target.value)}
             autoComplete="current-password"
+            aria-invalid={!!error}
+            aria-describedby={error ? "login-error" : undefined}
             required
           />
           <button
@@ -123,7 +127,7 @@ export default function Login() {
           {!cargando && <ArrowRight size={22} aria-hidden="true" />}
         </button>
         {error && (
-          <div className="login-error" role="alert">
+          <div id="login-error" className="login-error" role="alert">
             {language === "es" && error.message
               ? error.message
               : t(error.key || "loginError")}

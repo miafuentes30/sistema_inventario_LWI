@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useId } from "react";
 import { X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 export function useCopy() {
@@ -36,6 +36,7 @@ export function Notice({ error, success }) {
   ) : null;
 }
 export function Modal({ title, children, onClose, busy = false }) {
+  const titleId = useId();
   const ref = useRef(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -43,10 +44,13 @@ export function Modal({ title, children, onClose, busy = false }) {
   useEffect(() => {
     const previous = document.activeElement;
     const dialog = ref.current;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     dialog.showModal();
     dialog.querySelector("input,select,button")?.focus();
     return () => {
       dialog.close();
+      document.body.style.overflow = overflow;
       previous?.focus();
     };
   }, []);
@@ -54,7 +58,7 @@ export function Modal({ title, children, onClose, busy = false }) {
     <dialog
       ref={ref}
       className="account-modal"
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         if (!busy) close.current();
@@ -64,7 +68,7 @@ export function Modal({ title, children, onClose, busy = false }) {
       }}
     >
       <div className="account-modal-head">
-        <h2 id="modal-title">{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button
           type="button"
           disabled={busy}

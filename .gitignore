@@ -19,6 +19,7 @@ build/
 
 # Coverage
 coverage/
+frontend/.responsive-artifacts/
 
 # Logs
 logs/

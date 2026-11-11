@@ -1,4 +1,31 @@
 ﻿/* Adaptación del layout compartido: el contenido conserva su ancho natural. */
+/* Keep overflow local to tables, without hiding page-level layout errors. */
+input, select, textarea { min-width: 0; max-width: 100%; }
+textarea { font: inherit; resize: vertical; }
+input:focus-visible, textarea:focus-visible, [tabindex="0"]:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.lw-brand > div { min-width: 0; }
+.lw-brand strong { white-space: normal; overflow-wrap: anywhere; }
+.lw-table-wrap { max-width: 100%; overscroll-behavior-inline: contain; }
+.lw-table-wrap:focus-visible { outline-offset: -3px; }
+.account-message, .account-hint, .catalog-form-section { overflow-wrap: anywhere; }
+.account-modal { scroll-padding-block: 80px; }
+.account-modal-head { gap: 16px; align-items: flex-start; }
+.account-modal-head h2 { min-width: 0; overflow-wrap: anywhere; }
+.account-modal-head > button { flex-shrink: 0; }
+.account-modal .account-actions { position: sticky; bottom: -1px; z-index: 2; background: white; padding-block: 12px; border-top: 1px solid #e4ebf3; }
+.account-modal:has(.catalog-fields) { width: min(760px, calc(100vw - 28px)); }
+.catalog-heading-actions { flex-wrap: wrap; min-width: 0; }
+.account-primary, .account-secondary { text-align: center; }
+.account-primary svg, .account-secondary svg { flex-shrink: 0; }
+.inventory-page .catalog-filters, .suppliers-page .catalog-filters { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+.catalog-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.catalog-fields > h3, .catalog-fields > p, .catalog-fields > .catalog-checkbox, .catalog-fields > label:has(textarea) { grid-column: 1 / -1; }
+.catalog-fields textarea { width: 100%; padding: 12px; border: 1px solid #d7e2ee; border-radius: 6px; }
+.catalog-field-error { color: #b42318; font-size: 14px; line-height: 1.5; }
+.account-modal .catalog-checkbox { display: flex; flex-direction: row; align-items: center; }
+.account-modal .catalog-checkbox input { width: 22px; height: 22px; min-height: 22px; flex: 0 0 22px; }
+.lw-profile-identity > div { min-width: 0; }
+.lw-profile-menu button, .lw-profile-menu b { overflow-wrap: anywhere; white-space: normal; }
 .lw-app {
   width: 100%;
   min-width: 0;
@@ -586,8 +613,11 @@
   }
 }
 @media (max-width: 820px) {
+  .auth-visual-background, .auth-visual-recovery { min-height: 260px; }
+  .recovery-quote, .recovery-values { display: none; }
   .lw-sidebar {
     z-index: 60;
+    max-width: calc(100vw - 28px);
   }
   .lw-overlay {
     z-index: 55;
@@ -618,6 +648,28 @@
   }
 }
 @media (max-width: 600px) {
+  .auth-visual-background, .auth-visual-recovery { min-height: 110px; }
+  .recovery-visual-brand { top: 16px; left: 20px; }
+  .recovery-visual-brand img { width: 44px; }
+  .login-page .auth-visual-content { padding: 16px 20px; gap: 16px; }
+  .auth-mission { display: none; }
+  .auth-brand { flex-direction: row; align-items: center; }
+  .auth-brand img { width: 44px; }
+  .login-form-panel { padding-inline: 16px; }
+  .language-selector { flex-wrap: wrap; justify-content: center; align-self: center; gap: 8px; }
+  .language-options { flex-wrap: wrap; justify-content: center; border-radius: 16px; }
+  .language-option { padding-inline: 8px; min-height: 44px; }
+  .login-options { flex-wrap: wrap; gap: 16px; }
+  .recovery-card { padding: 20px 16px; }
+  .catalog-fields { grid-template-columns: minmax(0, 1fr); }
+  .account-modal { padding: 16px; max-height: calc(100dvh - 16px); }
+  .catalog-heading-actions { width: 100%; }
+  .catalog-heading-actions > button { flex: 1 1 9rem; }
+  .catalog-details { grid-template-columns: minmax(0, 1fr); }
+  .account-actions > button { flex: 1 1 8rem; }
+  .account-modal input, .account-modal select, .account-page input, .account-page select, textarea { font-size: 16px; }
+  .lw-menu-btn, .lw-bell, .lw-user-btn, .lw-close-menu, .account-icon, .account-primary, .account-secondary, .catalog-filters button, .account-pagination button { min-height: 44px; min-width: 44px; }
+  .inventory-page .catalog-filters button, .inventory-page input, .inventory-page select { min-height: 44px; }
   .lw-topbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -759,6 +811,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
   .system-search-popover {
     animation: none;
   }

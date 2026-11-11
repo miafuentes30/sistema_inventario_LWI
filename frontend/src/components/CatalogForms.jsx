@@ -1,5 +1,11 @@
 import { supplierFields } from "../services/catalogModel";
 import { useLanguage } from "../context/LanguageContext";
+import { useId } from "react";
+
+function FieldError({ id, invalid }) {
+  const { t } = useLanguage();
+  return invalid ? <span id={id} className="catalog-field-error">{t("checkField")}</span> : null;
+}
 
 export function CatalogFeedback({ error, notice }) {
   const { t } = useLanguage();
@@ -14,33 +20,37 @@ export function CatalogFeedback({ error, notice }) {
   </div> : null;
 }
 export function ProductFields({ form, setForm, catalogs, mode, error }) {
+  const errorPrefix = useId();
+  const errorProps = key => ({ "aria-invalid": !!error?.errors?.[key], "aria-describedby": error?.errors?.[key] ? `${errorPrefix}-${key}` : undefined });
+  const hint = key => <FieldError id={`${errorPrefix}-${key}`} invalid={!!error?.errors?.[key]}/>;
   const { t } = useLanguage();
   const change = key => e => setForm(old => ({ ...old, [key]: e.target.value, ...(key === "categoryId" && { subcategoryId: "" }) }));
   const select = (key, catalog, label, required = false) => <label>{t(label)} {required ? "*" : `(${t("optional")})`}
-    <select required={required} value={form[key] || ""} onChange={change(key)} aria-invalid={!!error?.errors?.[key]}>
+    <select required={required} value={form[key] || ""} onChange={change(key)} {...errorProps(key)}>
       <option value="">{t(catalog.length ? "select" : "emptyCatalog")}</option>
       {catalog.filter(row => row.active || row.id === form[key]).map(row => <option key={row.id} value={row.id}>{row.name}{!row.active ? ` (${t("inactive")})` : ""}</option>)}
-    </select></label>;
+    </select>{hint(key)}</label>;
   return <>
     {!catalogs.categorias?.length && <p className="account-hint">{t("categoryRequiredBeforeSave")}</p>}
-    <label>{t("code")} *<input required maxLength={80} value={form.code} onChange={change("code")} aria-invalid={!!error?.errors?.code}/></label>
-    <label>{t("productName")} *<input required maxLength={255} value={form.name} onChange={change("name")} aria-invalid={!!error?.errors?.name}/></label>
+    <label>{t("code")} *<input required maxLength={80} value={form.code} onChange={change("code")} {...errorProps("code")}/>{hint("code")}</label>
+    <label>{t("productName")} *<input required maxLength={255} value={form.name} onChange={change("name")} {...errorProps("name")}/>{hint("name")}</label>
     <label>{t("description")} ({t("optional")})<textarea rows={3} maxLength={5000} value={form.description || ""} onChange={change("description")}/></label>
     {select("categoryId", catalogs.categorias || [], "category", true)}
     {select("subcategoryId", (catalogs.subcategorias || []).filter(row => row.categoryId === form.categoryId), "subcategory")}
     {select("brandId", catalogs.marcas || [], "brand")}
     {select("inventoryTypeId", catalogs["tipos-inventario"] || [], "inventoryType")}
     {select("unitId", catalogs["unidades-medida"] || [], "unit")}
-    <label>{t("minimum")} ({t("optional")})<input type="number" min="0" step="0.001" value={form.minimum ?? ""} onChange={change("minimum")} aria-invalid={!!error?.errors?.minimum}/></label>
+    <label>{t("minimum")} ({t("optional")})<input type="number" min="0" step="0.001" value={form.minimum ?? ""} onChange={change("minimum")} {...errorProps("minimum")}/>{hint("minimum")}</label>
     <label>{t("status")}<select value={String(form.active)} disabled={mode === "edit"} onChange={e => setForm({ ...form, active: e.target.value === "true" })}>
       <option value="true">{t("active")}</option><option value="false">{t("inactive")}</option>
     </select></label>
   </>;
 }
 export function SupplierFields({ form, setForm, mode, banking, provideBank, setProvideBank, error }) {
+  const errorPrefix = useId();
   const { t } = useLanguage();
   const field = (key, max, required = false, type = "text") => <label key={key}>{t(key)} {required ? "*" : `(${t("optional")})`}
-    <input type={type} required={required} maxLength={max} value={form[key] ?? ""} onChange={e => setForm({ ...form, [key]: e.target.value })} aria-invalid={!!error?.errors?.[key]}/></label>;
+    <input type={type} required={required} maxLength={max} value={form[key] ?? ""} onChange={e => setForm({ ...form, [key]: e.target.value })} aria-invalid={!!error?.errors?.[key]} aria-describedby={error?.errors?.[key] ? `${errorPrefix}-${key}` : undefined}/><FieldError id={`${errorPrefix}-${key}`} invalid={!!error?.errors?.[key]}/></label>;
   return <>
     <label>{t("type")} *<select required value={form.type} disabled={mode !== "create"} onChange={e => setForm({ ...form, type: e.target.value, firstName: "", lastName: "", businessName: "", socialName: "", tradeName: "", legalName: "" })}>
       <option value="">{t("select")}</option>{Object.keys(supplierFields).map(key => <option key={key} value={key}>{t(key)}</option>)}
