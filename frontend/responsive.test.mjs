@@ -37,19 +37,25 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
     assert.ok(debugPort, "Edge did not expose its isolated debugging port");
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);
     const context = await browser.newContext();
-    let failureMode = false;
+    let failureMode = false, supplierDetailFails = false, brandPagination = false;
+    const brandPages = [];
     await context.route("**/api/**", async route => {
       const path = new URL(route.request().url()).pathname;
       let data = user;
       if (path.startsWith("/api/catalogos/")) data = catalog;
       else if (path === "/api/productos/1") data = product;
       else if (path === "/api/productos") data = { items: [product], total: 1, indicadores: { registeredProducts: 1, warehouses: 0 } };
-      else if (path === "/api/marcas") data = { items: catalog, total: 1 };
+      else if (path === "/api/marcas") {
+        const current = Number(new URL(route.request().url()).searchParams.get("pagina") || 1);
+        if (brandPagination) brandPages.push(current);
+        data = brandPagination ? { items: current === 2 ? [] : catalog, total: current === 2 || brandPages.includes(2) ? 10 : 11 } : { items: catalog, total: 1 };
+      }
       else if (path === "/api/proveedores") data = { items: [{ id: "1", type: "person", firstName: "Persona de prueba", lastName: "Visual", active: true }], total: 1, indicadores: {} };
+      else if (path === "/api/proveedores/1") data = { id: "1", type: "person", firstName: "Persona de prueba", lastName: "Visual", active: true };
       else if (path === "/api/usuarios/roles") data = [user.rol];
       else if (path === "/api/usuarios") data = { usuarios: [user], total: 1, pagina: 1, limite: 10, indicadores: { total: 1, activos: 1, inactivos: 0, administradores: 1 } };
       else if (path === "/api/configuracion") data = { nombre: "Sistema de Inventario", organizacion: "Living Water Guatemala", dominio: "@water.cc", zonaHoraria: "America/Guatemala" };
-      const fail = failureMode && path === "/api/productos";
+      const fail = failureMode && path === "/api/productos" || supplierDetailFails && path === "/api/proveedores/1";
       await route.fulfill({ status: fail ? 503 : 200, contentType: "application/json", body: JSON.stringify(fail ? { success: false, code: "REQUEST_FAILED", message: "Error de prueba" } : { success: true, data }) });
     });
     const page = await context.newPage();
@@ -165,6 +171,33 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
     await page.locator(".lw-menu-btn").click();
     await page.emulateMedia({ reducedMotion: "reduce" });
     assert.equal(await page.locator(".lw-sidebar").evaluate(e => getComputedStyle(e).transitionDuration), "0s");
+    await page.goto(origin + "/proveedores");
+    supplierDetailFails = true;
+    await page.locator("tbody .account-row-actions button").nth(1).click();
+    await page.locator("dialog [role=alert]").waitFor();
+    assert.equal(await page.locator("dialog form").count(), 0, "Failed detail must not expose an empty edit form");
+    await fits("failed detail blocks editing");
+    supplierDetailFails = false;
+    await page.locator("dialog .account-actions .account-primary").click();
+    await page.locator('dialog input[name="firstName"]').waitFor();
+    assert.equal(await page.locator('dialog input[name="firstName"]').inputValue(), "Persona de prueba");
+    await page.keyboard.press("Escape");
+    await page.goto(origin + "/inventario");
+    brandPagination = true;
+    await page.locator(".catalog-heading-actions .account-secondary").first().click();
+    const returnedToFirst = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/marcas" && url.searchParams.get("pagina") === "1" && brandPages.includes(2);
+    });
+    await page.locator("dialog .account-pagination button").last().click();
+    await returnedToFirst;
+    await page.locator("dialog tbody").getByText(catalog[0].name, { exact: true }).waitFor();
+    await page.waitForFunction(() => document.querySelector("dialog .account-pagination button")?.disabled);
+    assert.ok(brandPages.includes(2));
+    assert.equal(brandPages.at(-1), 1);
+    assert.ok(await page.locator("dialog tbody").textContent());
+    await fits("brand page clamps after filtered count shrinks");
+    await page.keyboard.press("Escape");
     failureMode = true;
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto(origin + "/inventario");

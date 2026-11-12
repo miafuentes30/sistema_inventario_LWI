@@ -24,6 +24,7 @@ export default function Catalog({ suppliers = false }) {
   const [modal, setModal] = useState(null), [modalLoading, setModalLoading] = useState(false), [formError, setFormError] = useState(null);
   const [form, setForm] = useState(suppliers ? emptySupplier : emptyProduct), [busy, setBusy] = useState(false);
   const [provideBank, setProvideBank] = useState(false), [brandsOpen, setBrandsOpen] = useState(false);
+  const [modalFailed, setModalFailed] = useState(false);
   useEffect(() => {
     let active = true; setLoading(true); setError(null);
     const params = { buscar: query.search, activo: query.status, orden: query.order, pagina: page, limite: pageSize,
@@ -40,6 +41,7 @@ export default function Catalog({ suppliers = false }) {
   }, [suppliers, token, query, page, pageSize, revision]);
   useEffect(() => { if (!suppliers && location.hash === "#nuevo" && canWrite) open("create"); }, [location.hash, suppliers, canWrite]);
   async function open(mode, record) {
+    setModalFailed(false); setModalLoading(false);
     setFormError(null); setNotice(""); setProvideBank(false); setForm(suppliers ? emptySupplier : emptyProduct); setModal({ mode, record });
     if (!record || mode === "state") return;
     setModalLoading(true);
@@ -47,12 +49,18 @@ export default function Catalog({ suppliers = false }) {
       const detail = suppliers ? await catalogService.getSupplier(record.id, token) : await catalogService.getProduct(record.id, token);
       setForm({ ...(suppliers ? emptySupplier : emptyProduct), ...detail });
       setProvideBank(Boolean(detail.bankAccount));
-    } catch (e) { setFormError(e); } finally { setModalLoading(false); }
+    } catch (e) { setFormError(e); setModalFailed(true); } finally { setModalLoading(false); }
   }
   function close() { if (!busy) { setModal(null); setFormError(null); setForm(suppliers ? emptySupplier : emptyProduct); } }
   function refresh() { setRevision(v => v + 1); }
   async function submit(e) {
     e.preventDefault(); setFormError(null);
+    if (busy || modalLoading || modalFailed) return;
+    const errors = {};
+    for (const input of e.currentTarget.elements) {
+      if (input.name && !input.disabled && (!input.validity.valid || input.required && !String(input.value).trim())) errors[input.name.split(".")[0]] = ["INVALID_INPUT"];
+    }
+    if (Object.keys(errors).length) { setFormError({ code: "INVALID_INPUT", errors }); return; }
     if (!(suppliers ? validSupplier(form) : validProduct(form))) { setFormError({ code: "INVALID_INPUT" }); return; }
     setBusy(true);
     try {
@@ -119,7 +127,7 @@ export default function Catalog({ suppliers = false }) {
     </section>
     {modal && <Modal title={t(modal.mode === "create" ? suppliers ? "newSupplier" : "newProduct" : modal.mode === "state" ? "confirmState" : modal.mode)} onClose={close} busy={busy || modalLoading}>
       <CatalogFeedback error={formError}/>
-      {modalLoading ? <p role="status">{t("loading")}</p> : modal.mode === "state" ? <><p>{t("confirmState")}</p><div className="account-actions"><button className="account-secondary" disabled={busy} onClick={close}>{t("cancel")}</button><button className="account-primary" disabled={busy} onClick={changeState}>{t(busy ? "saving" : "confirm")}</button></div></> : <form noValidate className="account-form" onSubmit={submit}>
+      {modalLoading ? <p role="status">{t("loading")}</p> : modalFailed ? <div className="account-actions"><button className="account-secondary" onClick={close}>{t("close")}</button><button className="account-primary" onClick={() => open(modal.mode, modal.record)}>{t("retry")}</button></div> : modal.mode === "state" ? <><p>{suppliers ? supplierNames(modal.record).filter(Boolean).join(" ") : `${modal.record.code} — ${modal.record.name}`}</p><p>{t("status")}: {t(modal.record.active ? "inactive" : "active")}</p><div className="account-actions"><button className="account-secondary" disabled={busy} onClick={close}>{t("cancel")}</button><button className="account-primary" disabled={busy} onClick={changeState}>{t(busy ? "saving" : "confirm")}</button></div></> : <form noValidate className="account-form" onSubmit={submit}>
         <fieldset disabled={modal.mode === "view" || busy} className="catalog-fields">{suppliers ? <SupplierFields form={form} setForm={setForm} mode={modal.mode} banking={canWrite} provideBank={provideBank} setProvideBank={setProvideBank} error={formError}/> : <ProductFields form={form} setForm={setForm} mode={modal.mode} catalogs={catalogs} error={formError}/>}</fieldset>
         <div className="account-actions"><button type="button" className="account-secondary" disabled={busy} onClick={close}>{t("close")}</button>{modal.mode !== "view" && <button className="account-primary" disabled={busy}>{t(busy ? "saving" : "save")}</button>}</div>
       </form>}

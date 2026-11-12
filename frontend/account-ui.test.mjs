@@ -295,7 +295,7 @@ test("Login, rutas, usuarios, perfil, idioma y logout en DOM", async () => {
         await prisma.usuario.findUnique({ where: { correo: email } })
       )?.id;
     }
-    if (createdId)
+    if (createdId && process.env.LWI_KEEP_TEST_DATA !== "1")
       await prisma.usuario.deleteMany({
         where: { id: createdId, correo: email },
       });

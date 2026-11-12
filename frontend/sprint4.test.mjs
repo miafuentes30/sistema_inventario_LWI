@@ -81,7 +81,7 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
     else if (path === "/api/usuarios") data = { usuarios: [], total: 0, pagina: 1, limite: 10, indicadores: {} };
     return { ok: status === 200, status, json: async () => status === 200 ? { success: true, data } : { success: false, code: "NOT_FOUND" } };
   };
-  const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", ssr: { noExternal: ["react-router-dom", "react-router"], resolve: { conditions: ["module-sync", "import", "development"] } } });
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: "custom", ssr: { noExternal: ["react-router-dom", "react-router"], resolve: { conditions: ["module-sync", "import", "development"] } } });
   const React = await import("react"); const { act } = React;
   const { createRoot } = await import("react-dom/client"); const { Simulate } = await import("react-dom/test-utils");
   const { BrowserRouter } = await vite.ssrLoadModule("react-router-dom");

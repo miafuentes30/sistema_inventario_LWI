@@ -267,7 +267,7 @@ test("Usuarios, perfil y configuración con PostgreSQL real", async (t) => {
     );
   } finally {
     // Elimina exclusivamente la cuenta desechable creada por esta prueba.
-    if (createdId)
+    if (createdId && process.env.LWI_KEEP_TEST_DATA !== "1")
       await prisma.usuario.deleteMany({
         where: { id: BigInt(createdId), correo: email },
       });

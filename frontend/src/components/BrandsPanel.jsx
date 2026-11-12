@@ -13,11 +13,15 @@ export default function BrandsPanel({ token, canWrite, onClose, onChanged }) {
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true; setLoading(true); setError(null);
-    catalogService.listBrands(token, query).then(result => { if (active) setData(result); }).catch(e => { if (active) setError(e); }).finally(() => { if (active) setLoading(false); });
+    catalogService.listBrands(token, query).then(result => { if (active) {
+      setData(result);
+      const lastPage = Math.max(1, Math.ceil(result.total / 10));
+      if (query.pagina > lastPage) setQuery(old => ({ ...old, pagina: lastPage }));
+    } }).catch(e => { if (active) { setError(e); setData({ items: [], total: 0 }); } }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [token, query, revision]);
   async function save(e) {
-    e?.preventDefault(); setBusy(true); setError(null); setNotice("");
+    e?.preventDefault(); if (busy) return; setBusy(true); setError(null); setNotice("");
     try {
       if (confirm) await catalogService.setBrandState(confirm.id, !confirm.active, token);
       else await catalogService.saveBrand(form.id, { name: form.name, active: form.active }, token);
@@ -26,6 +30,7 @@ export default function BrandsPanel({ token, canWrite, onClose, onChanged }) {
   }
   return <Modal title={t("brands")} onClose={onClose} busy={busy}>
     <CatalogFeedback error={error} notice={notice}/>
+    {error && !form && !confirm && <button className="account-secondary" onClick={() => setRevision(v => v + 1)}>{t("retry")}</button>}
     {confirm ? <><p>{t("confirmState")}: {confirm.name}</p><div className="account-actions"><button className="account-secondary" disabled={busy} onClick={() => setConfirm(null)}>{t("cancel")}</button><button className="account-primary" disabled={busy} onClick={() => save()}>{t("confirm")}</button></div></> : <>
       <div className="catalog-brand-filters"><label>{t("searchBrand")}<input type="search" maxLength={160} value={query.buscar} onChange={e => setQuery({ ...query, buscar: e.target.value, pagina: 1 })}/></label>
         <label>{t("status")}<select value={query.activo} onChange={e => setQuery({ ...query, activo: e.target.value, pagina: 1 })}><option value="">{t("all")}</option><option value="true">{t("active")}</option><option value="false">{t("inactive")}</option></select></label>

@@ -150,6 +150,16 @@ test("Sprint 5 HTTP persistence, permissions and integration on isolated databas
     });
     const productBody = () => ({ code: tag + "_P", name: tag + " Product", description: "S5TEST description", categoryId: String(cat.id), subcategoryId: String(sub.id),
       unitId: String(unit.id), brandId: brand.id, inventoryTypeId: String(inventoryType.id), minimum: "1.125", active: true });
+    await t.test("Brands remain available during parallel catalog refreshes", async () => {
+      const results = await Promise.all([
+        ...["categorias", "subcategorias", "marcas", "unidades-medida", "tipos-inventario", "bodegas"].map(name => request(`/catalogos/${name}`)),
+        ...Array.from({ length: 8 }, () => request(`/marcas?buscar=${tag}`))
+      ]);
+      for (const result of results.slice(6)) {
+        assert.equal(result.total, 3);
+        assert.equal(result.items.length, 3);
+      }
+    });
     await t.test("Product persists optional brand, all relations and exact minimum without invented stock", async () => {
       product = await request("/productos", "POST", productBody(), "Administrador", 201);
       const detail = await request(`/productos/${product.id}`);
@@ -203,16 +213,18 @@ test("Sprint 5 HTTP persistence, permissions and integration on isolated databas
       assert.equal(duplicate.code, "DUPLICATE_EMAIL");
     });
   } finally {
-    const thirds = await prisma.tercero.findMany({ where: { OR: [{ persona: { nombres: { startsWith: tag } } }, { empresa: { nombreComercial: { startsWith: tag } } }] }, select: { id: true } });
-    const ids = thirds.map(t => t.id);
-    await prisma.cuentaBancariaTercero.deleteMany({ where: { terceroId: { in: ids } } });
-    await prisma.terceroRol.deleteMany({ where: { terceroId: { in: ids } } });
-    await prisma.tercero.deleteMany({ where: { id: { in: ids } } });
-    await prisma.empresa.deleteMany({ where: { nombreComercial: { startsWith: tag } } });
-    await prisma.persona.deleteMany({ where: { nombres: { startsWith: tag } } });
-    await prisma.producto.deleteMany({ where: { codigo: { startsWith: tag } } });
-    for (const model of ["subcategoria", "categoria", "marca", "unidadMedida", "tipoInventario", "bodega"]) await prisma[model].deleteMany({ where: { nombre: { startsWith: tag } } });
-    await prisma.usuario.deleteMany({ where: { id: { in: fixtureUsers } } });
+    if (process.env.LWI_KEEP_TEST_DATA !== "1") {
+      const thirds = await prisma.tercero.findMany({ where: { OR: [{ persona: { nombres: { startsWith: tag } } }, { empresa: { nombreComercial: { startsWith: tag } } }] }, select: { id: true } });
+      const ids = thirds.map(t => t.id);
+      await prisma.cuentaBancariaTercero.deleteMany({ where: { terceroId: { in: ids } } });
+      await prisma.terceroRol.deleteMany({ where: { terceroId: { in: ids } } });
+      await prisma.tercero.deleteMany({ where: { id: { in: ids } } });
+      await prisma.empresa.deleteMany({ where: { nombreComercial: { startsWith: tag } } });
+      await prisma.persona.deleteMany({ where: { nombres: { startsWith: tag } } });
+      await prisma.producto.deleteMany({ where: { codigo: { startsWith: tag } } });
+      for (const model of ["subcategoria", "categoria", "marca", "unidadMedida", "tipoInventario", "bodega"]) await prisma[model].deleteMany({ where: { nombre: { startsWith: tag } } });
+      await prisma.usuario.deleteMany({ where: { id: { in: fixtureUsers } } });
+    } else console.log(`Datos de prueba conservados: ${tag}`);
     assert.deepEqual(await sourceFingerprint(), original);
     await new Promise(r => server.close(r)); await prisma.$disconnect();
   }

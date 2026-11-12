@@ -21,7 +21,7 @@ export function CatalogFeedback({ error, notice }) {
 }
 export function ProductFields({ form, setForm, catalogs, mode, error }) {
   const errorPrefix = useId();
-  const errorProps = key => ({ "aria-invalid": !!error?.errors?.[key], "aria-describedby": error?.errors?.[key] ? `${errorPrefix}-${key}` : undefined });
+  const errorProps = key => ({ name: key, "aria-invalid": !!error?.errors?.[key], "aria-describedby": error?.errors?.[key] ? `${errorPrefix}-${key}` : undefined });
   const hint = key => <FieldError id={`${errorPrefix}-${key}`} invalid={!!error?.errors?.[key]}/>;
   const { t } = useLanguage();
   const change = key => e => setForm(old => ({ ...old, [key]: e.target.value, ...(key === "categoryId" && { subcategoryId: "" }) }));
@@ -34,7 +34,7 @@ export function ProductFields({ form, setForm, catalogs, mode, error }) {
     {!catalogs.categorias?.length && <p className="account-hint">{t("categoryRequiredBeforeSave")}</p>}
     <label>{t("code")} *<input required maxLength={80} value={form.code} onChange={change("code")} {...errorProps("code")}/>{hint("code")}</label>
     <label>{t("productName")} *<input required maxLength={255} value={form.name} onChange={change("name")} {...errorProps("name")}/>{hint("name")}</label>
-    <label>{t("description")} ({t("optional")})<textarea rows={3} maxLength={5000} value={form.description || ""} onChange={change("description")}/></label>
+    <label>{t("description")} ({t("optional")})<textarea name="description" rows={3} maxLength={5000} value={form.description || ""} onChange={change("description")}/></label>
     {select("categoryId", catalogs.categorias || [], "category", true)}
     {select("subcategoryId", (catalogs.subcategorias || []).filter(row => row.categoryId === form.categoryId), "subcategory")}
     {select("brandId", catalogs.marcas || [], "brand")}
@@ -50,26 +50,26 @@ export function SupplierFields({ form, setForm, mode, banking, provideBank, setP
   const errorPrefix = useId();
   const { t } = useLanguage();
   const field = (key, max, required = false, type = "text") => <label key={key}>{t(key)} {required ? "*" : `(${t("optional")})`}
-    <input type={type} required={required} maxLength={max} value={form[key] ?? ""} onChange={e => setForm({ ...form, [key]: e.target.value })} aria-invalid={!!error?.errors?.[key]} aria-describedby={error?.errors?.[key] ? `${errorPrefix}-${key}` : undefined}/><FieldError id={`${errorPrefix}-${key}`} invalid={!!error?.errors?.[key]}/></label>;
+    <input name={key} type={type} required={required} maxLength={max} value={form[key] ?? ""} onChange={e => setForm({ ...form, [key]: e.target.value })} aria-invalid={!!error?.errors?.[key]} aria-describedby={error?.errors?.[key] ? `${errorPrefix}-${key}` : undefined}/><FieldError id={`${errorPrefix}-${key}`} invalid={!!error?.errors?.[key]}/></label>;
   return <>
-    <label>{t("type")} *<select required value={form.type} disabled={mode !== "create"} onChange={e => setForm({ ...form, type: e.target.value, firstName: "", lastName: "", businessName: "", socialName: "", tradeName: "", legalName: "" })}>
+    <label>{t("type")} *<select name="type" aria-invalid={!!error?.errors?.type} aria-describedby={error?.errors?.type ? `${errorPrefix}-type` : undefined} required value={form.type} disabled={mode !== "create"} onChange={e => setForm({ ...form, type: e.target.value, firstName: "", lastName: "", businessName: "", socialName: "", tradeName: "", legalName: "" })}>
       <option value="">{t("select")}</option>{Object.keys(supplierFields).map(key => <option key={key} value={key}>{t(key)}</option>)}
-    </select></label>
+    </select><FieldError id={`${errorPrefix}-type`} invalid={!!error?.errors?.type}/></label>
     {(supplierFields[form.type] || []).map((key, index) => field(key, key === "firstName" || key === "lastName" ? 120 : index === 0 ? 200 : 250, index === 0 || form.type === "person"))}
     <h3 className="catalog-form-section">{t("contactDetails")}</h3>
     {[["address", 2000], ["municipality", 160], ["country", 100], ["email", 180, false, "email"], ["nit", 25], ["contactName", 200], ["phone", 40], ["postalCode", 20]].map(args => field(...args))}
     <h3 className="catalog-form-section">{t("paymentDetails")}</h3>
-    <label>{t("paymentMethod")} ({t("optional")})<select value={form.paymentMethod || ""} onChange={e => setForm({ ...form, paymentMethod: e.target.value, chequeBeneficiary: "" })}>
+    <label>{t("paymentMethod")} ({t("optional")})<select name="paymentMethod" value={form.paymentMethod || ""} onChange={e => setForm({ ...form, paymentMethod: e.target.value, chequeBeneficiary: "" })}>
       <option value="">{t("notSpecified")}</option><option value="TRANSFERENCIA">{t("transfer")}</option><option value="CHEQUE">{t("cheque")}</option>
     </select></label>
-    <label>{t("creditDays")} ({t("optional")})<select value={form.creditDays ?? ""} onChange={e => setForm({ ...form, creditDays: e.target.value })}>
+    <label>{t("creditDays")} ({t("optional")})<select name="creditDays" value={form.creditDays ?? ""} onChange={e => setForm({ ...form, creditDays: e.target.value })}>
       <option value="">{t("notSpecified")}</option><option value="0">{t("onDelivery")}</option>{[15,30,60].map(days => <option value={days} key={days}>{days} {t("days")}</option>)}
     </select></label>
     {banking && form.paymentMethod === "CHEQUE" && field("chequeBeneficiary", 250)}
     {banking && form.paymentMethod === "TRANSFERENCIA" && <>
       <h3 className="catalog-form-section">{t("bankDetails")}</h3>
       <label className="catalog-checkbox"><input type="checkbox" checked={provideBank} onChange={e => setProvideBank(e.target.checked)}/>{t("provideBank")}</label>
-      {provideBank && [["bank", "bankName", 160], ["name", "accountName", 250], ["number", "accountNumber", 80]].map(([key, label, max]) => <label key={key}>{t(label)} *<input required maxLength={max} autoComplete="off" value={form.bankAccount?.[key] || ""} onChange={e => setForm({ ...form, bankAccount: { ...form.bankAccount, [key]: e.target.value } })}/></label>)}
+      {provideBank && [["bank", "bankName", 160], ["name", "accountName", 250], ["number", "accountNumber", 80]].map(([key, label, max]) => <label key={key}>{t(label)} *<input name={`bankAccount.${key}`} aria-invalid={!!error?.errors?.bankAccount} aria-describedby={error?.errors?.bankAccount ? `${errorPrefix}-bank-${key}` : undefined} required maxLength={max} autoComplete="off" value={form.bankAccount?.[key] || ""} onChange={e => setForm({ ...form, bankAccount: { ...form.bankAccount, [key]: e.target.value } })}/><FieldError id={`${errorPrefix}-bank-${key}`} invalid={!!error?.errors?.bankAccount}/></label>)}
     </>}
     <label>{t("status")}<select value={String(form.active)} disabled={mode === "edit"} onChange={e => setForm({ ...form, active: e.target.value === "true" })}>
       <option value="true">{t("active")}</option><option value="false">{t("inactive")}</option>

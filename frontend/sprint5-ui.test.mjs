@@ -34,11 +34,13 @@ test("React -> real HTTP -> isolated PostgreSQL: supplier, brands, product, relo
     const parsed = new URL(url);
     if (parsed.pathname.startsWith("/api/")) {
       if (options?.method && options.method !== "GET") writes.push({ path: parsed.pathname, method: options.method });
+      // Existing isolated records must not become targets of this fixture's UI.
+      if ((!options?.method || options.method === "GET") && ["/api/productos", "/api/proveedores", "/api/marcas"].includes(parsed.pathname)) parsed.searchParams.set("buscar", tag);
       return originalFetch(`http://127.0.0.1:${server.address().port}${parsed.pathname}${parsed.search}`, options);
     }
     return originalFetch(url, options);
   };
-  const vite = await createServer({ server: { middlewareMode: true }, appType: "custom", ssr: { noExternal: ["react-router-dom", "react-router"], resolve: { conditions: ["module-sync", "import", "development"] } } });
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false }, appType: "custom", ssr: { noExternal: ["react-router-dom", "react-router"], resolve: { conditions: ["module-sync", "import", "development"] } } });
   const React = await import("react"), { act } = React;
   const { createRoot } = await import("react-dom/client"), { Simulate } = await import("react-dom/test-utils");
   const { BrowserRouter } = await vite.ssrLoadModule("react-router-dom");
@@ -113,16 +115,18 @@ test("React -> real HTTP -> isolated PostgreSQL: supplier, brands, product, relo
   } finally {
     await act(async () => root.unmount()); await vite.close(); globalThis.fetch = originalFetch; dom.window.close();
     await new Promise(r => server.close(r));
-    const thirds = await prisma.tercero.findMany({ where: { persona: { nombres: { startsWith: tag } } }, select: { id: true } });
-    const ids = thirds.map(t => t.id);
-    await prisma.cuentaBancariaTercero.deleteMany({ where: { terceroId: { in: ids } } });
-    await prisma.terceroRol.deleteMany({ where: { terceroId: { in: ids } } });
-    await prisma.tercero.deleteMany({ where: { id: { in: ids } } });
-    await prisma.persona.deleteMany({ where: { nombres: { startsWith: tag } } });
-    await prisma.producto.deleteMany({ where: { codigo: { startsWith: tag } } });
-    await prisma.marca.deleteMany({ where: { nombre: { startsWith: tag } } });
-    await prisma.categoria.delete({ where: { id: category.id } });
-    await prisma.usuario.delete({ where: { id: account.id } });
+    if (process.env.LWI_KEEP_TEST_DATA !== "1") {
+      const thirds = await prisma.tercero.findMany({ where: { persona: { nombres: { startsWith: tag } } }, select: { id: true } });
+      const ids = thirds.map(t => t.id);
+      await prisma.cuentaBancariaTercero.deleteMany({ where: { terceroId: { in: ids } } });
+      await prisma.terceroRol.deleteMany({ where: { terceroId: { in: ids } } });
+      await prisma.tercero.deleteMany({ where: { id: { in: ids } } });
+      await prisma.persona.deleteMany({ where: { nombres: { startsWith: tag } } });
+      await prisma.producto.deleteMany({ where: { codigo: { startsWith: tag } } });
+      await prisma.marca.deleteMany({ where: { nombre: { startsWith: tag } } });
+      await prisma.categoria.delete({ where: { id: category.id } });
+      await prisma.usuario.delete({ where: { id: account.id } });
+    } else console.log(`Datos de prueba conservados: ${tag}`);
     await prisma.$disconnect();
   }
 });

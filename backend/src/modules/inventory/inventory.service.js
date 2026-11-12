@@ -14,15 +14,17 @@ async function catalogs(name, q) {
     ...(model === "subcategoria" && q.categoriaId && { categoriaId: BigInt(q.categoriaId) }) }, orderBy: [{ nombre: q.orden }, { id: "asc" }] })).map(catalogDto);
 }
 async function brands(q) {
-  return prisma.$transaction(async tx => {
-    const clauses = [Prisma.sql`true`];
-    if (q.buscar) clauses.push(Prisma.sql`nombre ILIKE ${`%${q.buscar.replace(/[\\%_]/g, "\\$&")}%`}`);
-    if (q.activo) clauses.push(Prisma.sql`activo=${q.activo === "true"}`);
-    const where = Prisma.sql`WHERE ${Prisma.join(clauses, " AND ")}`;
-    const rows = await tx.$queryRaw(Prisma.sql`SELECT id,nombre,activo FROM marcas ${where} ORDER BY lower(btrim(nombre)) ${Prisma.raw(q.orden === "desc" ? "DESC" : "ASC")},id ASC LIMIT ${q.limite} OFFSET ${(q.pagina - 1) * q.limite}`);
-    const [count] = await tx.$queryRaw(Prisma.sql`SELECT count(*)::int AS total FROM marcas ${where}`);
-    return { items: rows.map(catalogDto), total: count.total, pagina: q.pagina, limite: q.limite };
-  }, { isolationLevel: "RepeatableRead" });
+  const clauses = [Prisma.sql`true`];
+  if (q.buscar) clauses.push(Prisma.sql`nombre ILIKE ${`%${q.buscar.replace(/[\\%_]/g, "\\$&")}%`}`);
+  if (q.activo) clauses.push(Prisma.sql`activo=${q.activo === "true"}`);
+  const where = Prisma.sql`WHERE ${Prisma.join(clauses, " AND ")}`;
+  // These two independent reads need one snapshot, not an interactive
+  // transaction whose short acquisition window can expire during refreshes.
+  const [rows, [count]] = await prisma.$transaction([
+    prisma.$queryRaw(Prisma.sql`SELECT id,nombre,activo FROM marcas ${where} ORDER BY lower(btrim(nombre)) ${Prisma.raw(q.orden === "desc" ? "DESC" : "ASC")},id ASC LIMIT ${q.limite} OFFSET ${(q.pagina - 1) * q.limite}`),
+    prisma.$queryRaw(Prisma.sql`SELECT count(*)::int AS total FROM marcas ${where}`)
+  ], { isolationLevel: "RepeatableRead" });
+  return { items: rows.map(catalogDto), total: count.total, pagina: q.pagina, limite: q.limite };
 }
 async function saveBrand(id, input) {
   if (id && !(await prisma.marca.findUnique({ where: { id: BigInt(id) } }))) throw notFound();

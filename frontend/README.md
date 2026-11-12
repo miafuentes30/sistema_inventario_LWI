@@ -68,6 +68,8 @@ Si tu backend utiliza otro puerto, modifica `frontend/.env`.
 
 ## Revisión responsiva
 
+La [revisión de cierre del Sprint 5](../docs/SPRINT_5_INTEGRACION.md) documenta los resultados actuales, las correcciones de formularios y paginación y los comandos secuenciales de integración. Los resultados que siguen describen las etapas responsivas previas; la matriz ampliada del cierre verificó 511 casos en Edge.
+
 Se reutilizan Home, SystemSearch, Modal, Catalog, CatalogForms, BrandsPanel y el layout de autenticación. Los ajustes se concentran en `src/styles/responsive.css`; no cambian API, autenticación, backend ni bases de datos.
 
 Archivos de esta adaptación:
