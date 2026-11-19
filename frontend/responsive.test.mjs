@@ -37,12 +37,13 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
     assert.ok(debugPort, "Edge did not expose its isolated debugging port");
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);
     const context = await browser.newContext();
-    let failureMode = false, supplierDetailFails = false, brandPagination = false;
+    let failureMode = false, supplierDetailFails = false, brandPagination = false, readOnlyRole = false;
     const brandPages = [];
     await context.route("**/api/**", async route => {
       const path = new URL(route.request().url()).pathname;
-      let data = user;
-      if (path.startsWith("/api/catalogos/")) data = catalog;
+      let data = readOnlyRole ? { ...user, rol: { id: "2", nombre: "Solicitante" } } : user;
+      if (path === "/api/inventario-movimientos/capacidades") data = { schemaReady:false,enabled:false,needsMigration:true,confirmationAllowed:false,storageAvailable:false,openingRegistered:null };
+      else if (path.startsWith("/api/catalogos/")) data = catalog;
       else if (path === "/api/productos/1") data = product;
       else if (path === "/api/productos") data = { items: [product], total: 1, indicadores: { registeredProducts: 1, warehouses: 0 } };
       else if (path === "/api/marcas") {
@@ -84,13 +85,41 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
       for (const width of (process.env.LWI_RESPONSIVE_WIDTHS || "320,375,430,768,1024,1366,1920,2560").split(",").map(Number)) {
         console.log(`Checking ${language}: ${width}px`);
         await page.setViewportSize({ width, height: 900 });
-        for (const path of ["/login", "/recuperar-contrasena", "/", "/inventario", "/inventario/1", "/proveedores", "/usuarios", "/configuracion", "/perfil"]) {
+        for (const path of ["/login", "/recuperar-contrasena", "/", "/inventario", "/inventario/1", "/proveedores", "/usuarios", "/configuracion", "/perfil", "/entradas", "/entradas/nueva", "/entradas/1", "/salidas", "/salidas/nueva", "/salidas/1"]) {
           await page.goto(origin + path);
           await page.locator("h1").first().waitFor();
+          if (path === "/inventario/1") {
+            await page.locator(".pd-summary").waitFor();
+            assert.ok((await page.locator(".pd-summary").textContent()).includes(product.name));
+          }
           await page.evaluate(() => document.fonts.ready);
           await fits(`${language} ${width} ${path}`);
           if (language === "fr" && [375,1366].includes(width)) await page.screenshot({ path: new URL(`${path.replaceAll("/", "_") || "home"}-fr-${width}.png`, output).pathname.replace(/^\/(\w:)/, "$1") });
         }
+        await page.goto(origin + "/entradas/nueva");
+        await page.locator(".s6-product-picker summary").click();
+        await page.locator(".s6-product-picker button").first().click();
+        await page.locator(".s6-lines tbody input").first().fill("0.1");
+        await page.locator(".s6-lines tbody input").nth(1).fill("0.2");
+        assert.equal(await page.locator(".s6-form button[type=submit]").isDisabled(),true);
+        assert.equal(await page.locator(".s6-bottom .account-primary").isDisabled(),true);
+        assert.equal(await page.locator(".s6-lines tbody tr").count(),1);
+        await fits(`${language} ${width} provisional entry exact totals`);
+        await page.goto(origin + "/inventario/1");
+        await page.locator(".pd-summary").waitFor();
+        for (let index = 0; index < 5; index++) {
+          await page.getByRole("tab").nth(index).click();
+          assert.equal(await page.getByRole("tab").nth(index).getAttribute("aria-selected"), "true");
+          await fits(`${language} ${width} product detail tab ${index}`);
+        }
+        await page.getByRole("tab").first().focus();
+        await page.keyboard.press("ArrowRight");
+        assert.equal(await page.getByRole("tab").nth(1).getAttribute("aria-selected"), "true");
+        await page.locator(".pd-heading-actions .account-primary").click();
+        await page.locator('dialog input[name="code"]').waitFor();
+        assert.equal(await page.locator('dialog input[name="code"]').inputValue(), product.code);
+        await fits(`${language} ${width} edit from detail`);
+        await page.keyboard.press("Escape");
         await page.goto(origin + "/proveedores");
         await page.locator(".catalog-heading-actions .account-primary").click();
         await page.locator("dialog").waitFor();
@@ -198,6 +227,12 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
     assert.ok(await page.locator("dialog tbody").textContent());
     await fits("brand page clamps after filtered count shrinks");
     await page.keyboard.press("Escape");
+    readOnlyRole = true;
+    await page.goto(origin + "/inventario/1");
+    await page.locator(".pd-summary").waitFor();
+    assert.equal(await page.locator(".pd-heading-actions .account-primary").count(), 0);
+    await fits("read-only product detail");
+    readOnlyRole = false;
     failureMode = true;
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto(origin + "/inventario");
