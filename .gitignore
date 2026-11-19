@@ -41,6 +41,7 @@ Thumbs.db
 # Local databases
 .local-backups/
 backend/.sprint5-isolated/
+backend/.sprint6-isolated/
 *.db
 *.db-journal
 *.sqlite

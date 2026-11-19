@@ -1,0 +1,468 @@
+// PROPOSAL ONLY. Do not deploy without explicit authorization.
+// Sprint 5 models validated on the isolated test database. No principal migration applied.
+// SQL CHECK constraints, expression indexes and triggers live in the SQL proposal.
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../.sprint6-isolated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Rol {
+  id          BigInt    @id @default(autoincrement())
+  nombre      String    @unique @db.VarChar(50)
+  descripcion String?   @db.VarChar(150)
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  usuarios    Usuario[]
+
+  @@map("rol")
+}
+
+model Usuario {
+  movimientosCreados     Movimiento[]       @relation("CreadorMovimiento")
+  movimientosResponsable Movimiento[]       @relation("ResponsableMovimiento")
+  movimientosSolicitados Movimiento[]       @relation("SolicitanteMovimiento")
+  movimientosEntregados  Movimiento[]       @relation("EntregaMovimiento")
+  movimientosRevisados   Movimiento[]       @relation("RevisionMovimiento")
+  movimientosAprobados   Movimiento[]       @relation("AprobacionMovimiento")
+  movimientosConfirmados Movimiento[]       @relation("ConfirmadorMovimiento")
+  eventosMovimiento      MovimientoEvento[]
+  id                     BigInt             @id @default(autoincrement())
+  nombre                 String             @db.VarChar(120)
+  correo                 String             @unique @db.VarChar(180)
+  passwordHash           String             @map("contraseña") @db.VarChar(255)
+  rolId                  BigInt             @map("rol_id")
+  activo                 Boolean            @default(true)
+  ultimoAcceso           DateTime?          @map("ultimo_acceso") @db.Timestamp(6)
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt              DateTime           @default(now()) @map("updated_at") @db.Timestamp(6)
+  rol                    Rol                @relation(fields: [rolId], references: [id], onDelete: Restrict)
+  bodegas                Bodega[]
+
+  @@map("usuarios")
+}
+
+model Persona {
+  id             BigInt    @id @default(autoincrement())
+  nombres        String    @db.VarChar(120)
+  apellidos      String    @db.VarChar(120)
+  nit            String?   @db.VarChar(25)
+  telefono       String?   @db.VarChar(40)
+  correo         String?   @db.VarChar(180)
+  direccion      String?
+  municipio      String?   @db.VarChar(160)
+  pais           String?   @db.VarChar(100)
+  nombreContacto String?   @map("nombre_contacto") @db.VarChar(200)
+  codigoPostal   String?   @map("codigo_postal") @db.VarChar(20)
+  observaciones  String?
+  activo         Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  tercero        Tercero?
+  empresas       Empresa[] @relation("PropietarioEmpresa")
+
+  @@map("personas")
+}
+
+model Empresa {
+  id                   BigInt   @id @default(autoincrement())
+  // INDIVIDUAL: nombre de empresa. JURIDICA: nombre comercial.
+  nombreComercial      String   @map("nombre_comercial") @db.VarChar(200)
+  // INDIVIDUAL: nombre social (meaning pending). JURIDICA: razon social.
+  razonSocial          String?  @map("razon_social") @db.VarChar(250)
+  tipoEmpresa          String   @map("tipo_empresa") @db.VarChar(12)
+  formaJuridica        String?  @map("forma_juridica") @db.VarChar(100)
+  propietarioPersonaId BigInt?  @map("propietario_persona_id")
+  nit                  String?  @db.VarChar(25)
+  telefono             String?  @db.VarChar(40)
+  correo               String?  @db.VarChar(180)
+  direccion            String?
+  municipio            String?  @db.VarChar(160)
+  pais                 String?  @db.VarChar(100)
+  nombreContacto       String?  @map("nombre_contacto") @db.VarChar(200)
+  codigoPostal         String?  @map("codigo_postal") @db.VarChar(20)
+  observaciones        String?
+  activo               Boolean  @default(true)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  propietario          Persona? @relation("PropietarioEmpresa", fields: [propietarioPersonaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  tercero              Tercero?
+
+  @@index([propietarioPersonaId], map: "ix_empresas_propietario")
+  @@map("empresas")
+}
+
+model Tercero {
+  movimientos   Movimiento[]
+  id            BigInt       @id @default(autoincrement())
+  // SQL enforces exactly one identity, never both and never neither.
+  personaId     BigInt?      @unique @map("persona_id")
+  empresaId     BigInt?      @unique @map("empresa_id")
+  observaciones String?
+  activo        Boolean      @default(true)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  persona       Persona?     @relation(fields: [personaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  empresa       Empresa?     @relation(fields: [empresaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  roles         TerceroRol[]
+
+  @@map("terceros")
+}
+
+model TerceroRol {
+  terceroId          BigInt                 @map("tercero_id")
+  rol                String                 @db.VarChar(15)
+  // PROVEEDOR is a role of Tercero, not another identity/table.
+  metodoPago         String?                @map("metodo_pago") @db.VarChar(20)
+  diasCredito        Int?                   @map("dias_credito")
+  beneficiarioCheque String?                @map("beneficiario_cheque") @db.VarChar(250)
+  activo             Boolean                @default(true)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @default(now()) @map("updated_at") @db.Timestamptz(6)
+  tercero            Tercero                @relation(fields: [terceroId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  cuentaBancaria     CuentaBancariaTercero?
+
+  @@id([terceroId, rol])
+  @@map("tercero_roles")
+}
+
+model CuentaBancariaTercero {
+  // Optional 1:1 extension, not a duplicated supplier entity.
+  terceroId    BigInt     @map("tercero_id")
+  rol          String     @default("PROVEEDOR") @db.VarChar(15)
+  banco        String     @db.VarChar(160)
+  nombreCuenta String     @map("nombre_cuenta") @db.VarChar(250)
+  numeroCuenta String     @map("numero_cuenta") @db.VarChar(80)
+  activo       Boolean    @default(true)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  terceroRol   TerceroRol @relation(fields: [terceroId, rol], references: [terceroId, rol], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([terceroId, rol])
+  @@map("cuentas_bancarias_tercero")
+}
+
+model Categoria {
+  id                BigInt         @id @default(autoincrement())
+  codigo            String?        @unique @db.VarChar(40)
+  nombre            String         @unique @db.VarChar(200)
+  descripcion       String?
+  pendienteRevision Boolean        @default(false) @map("pendiente_revision")
+  activo            Boolean        @default(true)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  subcategorias     Subcategoria[]
+  productos         Producto[]
+
+  @@map("categorias")
+}
+
+model Subcategoria {
+  id          BigInt     @id @default(autoincrement())
+  categoriaId BigInt     @map("categoria_id")
+  codigo      String?    @db.VarChar(40)
+  nombre      String     @db.VarChar(200)
+  descripcion String?
+  activo      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  categoria   Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  productos   Producto[]
+
+  @@unique([id, categoriaId], map: "uq_subcategorias_id_categoria")
+  @@unique([categoriaId, nombre], map: "uq_subcategorias_categoria_nombre")
+  @@unique([categoriaId, codigo], map: "uq_subcategorias_categoria_codigo")
+  @@map("subcategorias")
+}
+
+model Marca {
+  id        BigInt     @id @default(autoincrement())
+  nombre    String     @unique @db.VarChar(160)
+  activo    Boolean    @default(true)
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  productos Producto[]
+
+  @@map("marcas")
+}
+
+model UnidadMedida {
+  detallesMovimiento MovimientoDetalle[]
+  id                 BigInt              @id @default(autoincrement())
+  codigo             String              @unique @db.VarChar(30)
+  nombre             String              @unique @db.VarChar(100)
+  simbolo            String?             @db.VarChar(20)
+  permiteFracciones  Boolean             @default(false) @map("permite_fracciones")
+  activo             Boolean             @default(true)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+  productos          Producto[]
+
+  @@map("unidades_medida")
+}
+
+model TipoInventario {
+  id          BigInt     @id @default(autoincrement())
+  codigo      String     @unique @db.VarChar(40)
+  nombre      String     @unique @db.VarChar(160)
+  descripcion String?
+  activo      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  productos   Producto[]
+
+  @@map("tipos_inventario")
+}
+
+model ClaseCoa {
+  // Retains the independent accounting classification already in the SQL.
+  id          BigInt     @id @default(autoincrement())
+  codigo      String     @unique @db.VarChar(50)
+  nombre      String?    @db.VarChar(200)
+  descripcion String?
+  activo      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  productos   Producto[]
+
+  @@map("clases_coa")
+}
+
+model Producto {
+  detallesMovimiento  MovimientoDetalle[]
+  lotes               Lote[]
+  id                  BigInt              @id @default(autoincrement())
+  codigo              String              @unique @db.VarChar(80)
+  nombre              String              @db.VarChar(255)
+  descripcion         String?
+  categoriaId         BigInt              @map("categoria_id")
+  subcategoriaId      BigInt?             @map("subcategoria_id")
+  unidadMedidaId      BigInt?             @map("unidad_medida_id")
+  marcaId             BigInt?             @map("marca_id")
+  tipoInventarioId    BigInt?             @map("tipo_inventario_id")
+  claseCoaId          BigInt?             @map("clase_coa_id")
+  esPerecedero        Boolean?            @map("es_perecedero")
+  requiereVencimiento Boolean?            @map("requiere_vencimiento")
+  // Threshold only. No initial stock, available balance or current cost here.
+  stockMinimo         Decimal?            @map("stock_minimo") @db.Decimal(18, 3)
+  fuenteImportacion   String?             @map("fuente_importacion") @db.VarChar(160)
+  pendienteRevision   Boolean             @default(true) @map("pendiente_revision")
+  observaciones       String?
+  activo              Boolean             @default(true)
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+  categoria           Categoria           @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  subcategoria        Subcategoria?       @relation(fields: [subcategoriaId, categoriaId], references: [id, categoriaId], onDelete: Restrict, onUpdate: Restrict, map: "fk_productos_subcategoria_categoria")
+  unidadMedida        UnidadMedida?       @relation(fields: [unidadMedidaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  marca               Marca?              @relation(fields: [marcaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  tipoInventario      TipoInventario?     @relation(fields: [tipoInventarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  claseCoa            ClaseCoa?           @relation(fields: [claseCoaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([categoriaId], map: "ix_productos_categoria")
+  @@index([subcategoriaId], map: "ix_productos_subcategoria")
+  @@index([unidadMedidaId], map: "ix_productos_unidad")
+  @@index([marcaId], map: "ix_productos_marca")
+  @@index([tipoInventarioId], map: "ix_productos_tipo_inventario")
+  @@index([claseCoaId], map: "ix_productos_clase_coa")
+  @@map("productos")
+}
+
+model Bodega {
+  ubicaciones          Ubicacion[]
+  movimientos          Movimiento[]
+  lotes                Lote[]
+  id                   BigInt       @id @default(autoincrement())
+  codigo               String       @unique @db.VarChar(40)
+  nombre               String       @db.VarChar(160)
+  descripcion          String?
+  direccion            String?
+  responsableUsuarioId BigInt?      @map("responsable_usuario_id")
+  activo               Boolean      @default(true)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+  responsable          Usuario?     @relation(fields: [responsableUsuarioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([responsableUsuarioId], map: "ix_bodegas_responsable")
+  @@map("bodegas")
+}
+
+model Ubicacion {
+  id       BigInt              @id @default(autoincrement())
+  bodegaId BigInt              @map("bodega_id")
+  codigo   String              @db.VarChar(40)
+  nombre   String              @db.VarChar(160)
+  activo   Boolean             @default(true)
+  bodega   Bodega              @relation(fields: [bodegaId], references: [id], onDelete: Restrict)
+  detalles MovimientoDetalle[]
+  lotes    Lote[]
+
+  @@unique([bodegaId, codigo])
+  @@unique([id, bodegaId])
+  @@map("ubicaciones")
+}
+
+model TipoMovimiento {
+  id                   BigInt       @id @default(autoincrement())
+  codigo               String       @unique @db.VarChar(40)
+  nombre               String       @db.VarChar(160)
+  tipo                 String       @db.VarChar(12)
+  proveedorRequerido   Boolean      @default(false) @map("proveedor_requerido")
+  documentoRequerido   Boolean      @default(false) @map("documento_requerido")
+  documentosPermitidos Json         @default("[]") @map("documentos_permitidos")
+  politicaConfirmada   Boolean      @default(false) @map("politica_confirmada")
+  activo               Boolean      @default(true)
+  movimientos          Movimiento[]
+
+  @@map("tipos_movimiento")
+}
+
+model Movimiento {
+  id                  BigInt                @id @default(autoincrement())
+  numero              String                @unique @db.VarChar(50)
+  tipo                String                @db.VarChar(12)
+  tipoMovimientoId    BigInt                @map("tipo_movimiento_id")
+  estado              String                @default("BORRADOR") @db.VarChar(15)
+  fechaOperacion      DateTime              @map("fecha_operacion") @db.Date
+  bodegaId            BigInt                @map("bodega_id")
+  terceroId           BigInt?               @map("tercero_id")
+  responsableId       BigInt                @map("responsable_usuario_id")
+  solicitanteId       BigInt?               @map("solicitante_usuario_id")
+  solicitanteNombre   String?               @map("solicitante_nombre") @db.VarChar(200)
+  solicitantePosicion String?               @map("solicitante_posicion") @db.VarChar(160)
+  claseDeclarada      String?               @map("clase_declarada") @db.VarChar(160)
+  proyectoReferencia  String?               @map("proyecto_referencia") @db.VarChar(100)
+  proposito           String?               @db.VarChar(1000)
+  recibidoPor         String?               @map("recibido_por") @db.VarChar(200)
+  entregadoPorId      BigInt?               @map("entregado_por_usuario_id")
+  revisadoPorId       BigInt?               @map("revisado_por_usuario_id")
+  aprobadoPorId       BigInt?               @map("aprobado_por_usuario_id")
+  documentoNumero     String?               @map("documento_numero") @db.VarChar(100)
+  observaciones       String?               @db.VarChar(4000)
+  creadoPorId         BigInt                @map("creado_por_usuario_id")
+  confirmadoPorId     BigInt?               @map("confirmado_por_usuario_id")
+  confirmadoAt        DateTime?             @map("confirmado_at") @db.Timestamptz(6)
+  idempotencia        String                @unique @db.Uuid
+  contenidoHash       String                @map("contenido_hash") @db.VarChar(64)
+  version             Int                   @default(1)
+  movimientoOrigenId  BigInt?               @unique @map("movimiento_origen_id")
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime              @default(now()) @map("updated_at") @db.Timestamptz(6)
+  bodega              Bodega                @relation(fields: [bodegaId], references: [id], onDelete: Restrict)
+  tercero             Tercero?              @relation(fields: [terceroId], references: [id], onDelete: Restrict)
+  subtipo             TipoMovimiento        @relation(fields: [tipoMovimientoId], references: [id], onDelete: Restrict)
+  responsable         Usuario               @relation("ResponsableMovimiento", fields: [responsableId], references: [id], onDelete: Restrict)
+  solicitante         Usuario?              @relation("SolicitanteMovimiento", fields: [solicitanteId], references: [id], onDelete: Restrict)
+  entregadoPor        Usuario?              @relation("EntregaMovimiento", fields: [entregadoPorId], references: [id], onDelete: Restrict)
+  revisadoPor         Usuario?              @relation("RevisionMovimiento", fields: [revisadoPorId], references: [id], onDelete: Restrict)
+  aprobadoPor         Usuario?              @relation("AprobacionMovimiento", fields: [aprobadoPorId], references: [id], onDelete: Restrict)
+  creadoPor           Usuario               @relation("CreadorMovimiento", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  confirmadoPor       Usuario?              @relation("ConfirmadorMovimiento", fields: [confirmadoPorId], references: [id], onDelete: Restrict)
+  origen              Movimiento?           @relation("CorreccionMovimiento", fields: [movimientoOrigenId], references: [id], onDelete: Restrict)
+  correccion          Movimiento?           @relation("CorreccionMovimiento")
+  detalles            MovimientoDetalle[]
+  documentos          DocumentoMovimiento[]
+  eventos             MovimientoEvento[]
+
+  @@index([tipo, fechaOperacion])
+  @@index([bodegaId, estado])
+  @@map("movimientos")
+}
+
+model MovimientoDetalle {
+  id                 BigInt              @id @default(autoincrement())
+  movimientoId       BigInt              @map("movimiento_id")
+  productoId         BigInt              @map("producto_id")
+  unidadMedidaId     BigInt              @map("unidad_medida_id")
+  ubicacionId        BigInt?             @map("ubicacion_id")
+  codigoProducto     String?             @map("codigo_producto") @db.VarChar(80)
+  nombreProducto     String?             @map("nombre_producto") @db.VarChar(255)
+  unidadNombre       String?             @map("unidad_nombre") @db.VarChar(100)
+  cantidad           Decimal             @db.Decimal(18, 3)
+  cantidadSolicitada Decimal?            @map("cantidad_solicitada") @db.Decimal(18, 3)
+  costoUnitario      Decimal?            @map("costo_unitario") @db.Decimal(18, 6)
+  subtotal           Decimal?            @db.Decimal(36, 9)
+  codigoLote         String?             @map("codigo_lote") @db.VarChar(100)
+  fechaVencimiento   DateTime?           @map("fecha_vencimiento") @db.Date
+  movimiento         Movimiento          @relation(fields: [movimientoId], references: [id], onDelete: Restrict)
+  producto           Producto            @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  unidadMedida       UnidadMedida        @relation(fields: [unidadMedidaId], references: [id], onDelete: Restrict)
+  ubicacion          Ubicacion?          @relation(fields: [ubicacionId], references: [id], onDelete: Restrict)
+  loteSalidaId       BigInt?             @map("lote_salida_id")
+  loteSalida         Lote?               @relation("LoteSalida", fields: [loteSalidaId], references: [id], onDelete: Restrict)
+  loteEntrada        Lote?               @relation("LoteEntrada")
+  asientos           AsientoInventario[]
+
+  @@index([movimientoId])
+  @@index([productoId])
+  @@map("movimiento_detalles")
+}
+
+model Lote {
+  id                 BigInt              @id @default(autoincrement())
+  entradaDetalleId   BigInt              @unique @map("entrada_detalle_id")
+  productoId         BigInt              @map("producto_id")
+  bodegaId           BigInt              @map("bodega_id")
+  ubicacionId        BigInt?             @map("ubicacion_id")
+  codigoLote         String?             @map("codigo_lote") @db.VarChar(100)
+  fechaRecepcion     DateTime            @map("fecha_recepcion") @db.Date
+  fechaVencimiento   DateTime?           @map("fecha_vencimiento") @db.Date
+  cantidadInicial    Decimal             @map("cantidad_inicial") @db.Decimal(18, 3)
+  cantidadDisponible Decimal             @map("cantidad_disponible") @db.Decimal(18, 3)
+  costoUnitario      Decimal?            @map("costo_unitario") @db.Decimal(18, 6)
+  detallesSalida     MovimientoDetalle[] @relation("LoteSalida")
+  entradaDetalle     MovimientoDetalle   @relation("LoteEntrada", fields: [entradaDetalleId], references: [id], onDelete: Restrict)
+  producto           Producto            @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  bodega             Bodega              @relation(fields: [bodegaId], references: [id], onDelete: Restrict)
+  ubicacion          Ubicacion?          @relation(fields: [ubicacionId], references: [id], onDelete: Restrict)
+  asientos           AsientoInventario[]
+
+  @@index([productoId, bodegaId])
+  @@map("lotes")
+}
+
+model AsientoInventario {
+  id        BigInt            @id @default(autoincrement())
+  detalleId BigInt            @map("detalle_id")
+  loteId    BigInt            @map("lote_id")
+  cantidad  Decimal           @db.Decimal(18, 3)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  detalle   MovimientoDetalle @relation(fields: [detalleId], references: [id], onDelete: Restrict)
+  lote      Lote              @relation(fields: [loteId], references: [id], onDelete: Restrict)
+
+  @@unique([detalleId, loteId])
+  @@map("asientos_inventario")
+}
+
+model DocumentoMovimiento {
+  id           BigInt     @id @default(autoincrement())
+  movimientoId BigInt     @map("movimiento_id")
+  tipo         String     @db.VarChar(40)
+  numero       String     @db.VarChar(100)
+  fechaEmision DateTime?  @map("fecha_emision") @db.Date
+  storageKey   String?    @map("storage_key") @db.VarChar(500)
+  mime         String?    @db.VarChar(80)
+  tamano       Int?
+  sha256       String?    @db.VarChar(64)
+  movimiento   Movimiento @relation(fields: [movimientoId], references: [id], onDelete: Restrict)
+
+  @@index([movimientoId])
+  @@map("documentos_movimiento")
+}
+
+model MovimientoEvento {
+  id           BigInt     @id @default(autoincrement())
+  movimientoId BigInt     @map("movimiento_id")
+  usuarioId    BigInt     @map("usuario_id")
+  accion       String     @db.VarChar(40)
+  datos        Json
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  movimiento   Movimiento @relation(fields: [movimientoId], references: [id], onDelete: Restrict)
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([movimientoId, createdAt])
+  @@map("movimiento_eventos")
+}
