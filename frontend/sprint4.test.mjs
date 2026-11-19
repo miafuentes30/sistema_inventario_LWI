@@ -88,6 +88,7 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
   const { default: App } = await vite.ssrLoadModule("/src/App.jsx");
   const { AuthProvider } = await vite.ssrLoadModule("/src/context/AuthContext.jsx");
   const { LanguageProvider } = await vite.ssrLoadModule("/src/context/LanguageContext.jsx");
+  const { ThemeProvider } = await vite.ssrLoadModule("/src/context/ThemeContext.jsx");
   const root = createRoot(document.getElementById("root"));
   const button = text => [...document.querySelectorAll("button")].find(el => el.textContent.trim() === text);
   const click = async el => { assert.ok(el); await act(async () => Simulate.click(el)); };
@@ -95,7 +96,7 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
   const field = text => [...document.querySelectorAll("dialog label")].find(el => el.firstChild.textContent.trim() === text)?.querySelector("input,select");
   const route = async path => { await act(async () => { window.history.pushState({}, "", path); window.dispatchEvent(new dom.window.PopStateEvent("popstate")); }); };
   try {
-    await act(async () => root.render(React.createElement(BrowserRouter, null, React.createElement(AuthProvider, null, React.createElement(LanguageProvider, null, React.createElement(App))))));
+    await act(async () => root.render(React.createElement(BrowserRouter, null, React.createElement(AuthProvider, null, React.createElement(LanguageProvider, null, React.createElement(ThemeProvider, null, React.createElement(App)))))));
     assert.equal(document.querySelector("main h1").textContent, translations.es.inventory);
     assert.equal(document.querySelectorAll(".catalog-stats article").length, 5);
     assert.equal(document.querySelectorAll("thead th").length, 9);

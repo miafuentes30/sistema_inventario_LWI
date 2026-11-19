@@ -1,3 +1,4 @@
+import ThemeToggle from "../components/ThemeToggle";
 import { useCopy } from "../components/AccountUI";
 import Catalog from "./Catalog";
 import ProductDetail from "./ProductDetail";
@@ -285,6 +286,7 @@ export default function Home() {
             <SystemSearch items={visibleItems} language={language} value={search} onChange={setSearch} onNavigate={navigate} />
           </div>
           <div className="lw-top-actions">
+            <ThemeToggle />
             <button className="lw-bell" title={c("Notificaciones: pendientes de integración", "Notifications: pending integration")} aria-label={c("Notificaciones", "Notifications")}>
               <Bell size={24} />
               <span />

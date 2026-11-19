@@ -1,3 +1,4 @@
+import ThemeToggle from "../ThemeToggle";
 import { Globe2, Shield } from "lucide-react";
 import AuthVisual from "./AuthVisual";
 import { useLanguage } from "../../context/LanguageContext";
@@ -9,7 +10,7 @@ export default function AuthLayout({ children, variant = "login" }) {
     <main className={`login-page${isRecovery ? " recovery-page" : ""}`}>
       <AuthVisual variant={variant} />
       <section className={`login-form-panel${isRecovery ? " recovery-panel" : ""}`}>
-        <div className="language-selector">
+        <div className="auth-preferences"><ThemeToggle /><div className="language-selector">
           <Globe2 className="language-icon" size={20} aria-hidden="true" />
           <span className="language-label">{t("language")}</span>
           <div className="language-options" role="group" aria-label={t("language")}>
@@ -23,6 +24,7 @@ export default function AuthLayout({ children, variant = "login" }) {
               <span className="language-code" aria-hidden="true">FR</span>Français
             </button>
           </div>
+        </div>
         </div>
         <div className="login-form-container">
           {children}

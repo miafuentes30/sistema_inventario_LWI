@@ -47,6 +47,7 @@ test("React -> real HTTP -> isolated PostgreSQL: supplier, brands, product, relo
   const { default: App } = await vite.ssrLoadModule("/src/App.jsx");
   const { AuthProvider } = await vite.ssrLoadModule("/src/context/AuthContext.jsx");
   const { LanguageProvider } = await vite.ssrLoadModule("/src/context/LanguageContext.jsx");
+  const { ThemeProvider } = await vite.ssrLoadModule("/src/context/ThemeContext.jsx");
   const root = createRoot(document.getElementById("root"));
   const t = language => ({ ...sprintTranslations[language], ...sprint5Translations[language] });
   const button = text => [...document.querySelectorAll("button")].find(el => el.textContent.trim() === text);
@@ -58,7 +59,7 @@ test("React -> real HTTP -> isolated PostgreSQL: supplier, brands, product, relo
   const route = async path => { await act(async () => { window.history.pushState({}, "", path); window.dispatchEvent(new dom.window.PopStateEvent("popstate")); }); };
   let supplierId;
   try {
-    await act(async () => root.render(React.createElement(BrowserRouter, null, React.createElement(AuthProvider, null, React.createElement(LanguageProvider, null, React.createElement(App))))));
+    await act(async () => root.render(React.createElement(BrowserRouter, null, React.createElement(AuthProvider, null, React.createElement(LanguageProvider, null, React.createElement(ThemeProvider, null, React.createElement(App)))))));
     await until(() => button(t("es").newSupplier));
     await click(button(t("es").newSupplier));
     await change(field(t("es").type), "person");

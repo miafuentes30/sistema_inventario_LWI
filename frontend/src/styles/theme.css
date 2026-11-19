@@ -1,0 +1,53 @@
+/* Existing declarations keep their light values as fallbacks. */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --theme-surface: #152437;
+  --theme-soft: #1c3047;
+  --theme-text: #edf3fb;
+  --theme-muted: #b4c5da;
+  --theme-link: #8dc5ff;
+  --theme-border: #3c536d;
+  --theme-danger: #ffb4b4;
+  --theme-danger-bg: #462631;
+  --theme-success: #83e5b5;
+  --theme-success-bg: #173d36;
+  --theme-warning: #ffda81;
+  --theme-warning-bg: #40351e;
+  --text: #edf3fb;
+  --muted: #b4c5da;
+  --border: #3c536d;
+  --error: #ffb4b4;
+}
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; min-width: 42px; height: 42px; padding: 8px;
+  border: 1px solid var(--theme-border, #dce3eb); border-radius: 10px;
+  background: var(--theme-surface, #fff); color: var(--theme-text, #0a4174);
+}
+.theme-toggle:hover { background: var(--theme-soft, #edf4fb); }
+.theme-toggle:focus-visible { outline: 3px solid #67b5ff; outline-offset: 3px; }
+.auth-preferences { align-self: flex-end; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; max-width: 100%; }
+.theme-settings label { max-width: 360px; }
+:root[data-theme="dark"] body { background: #0c1827; }
+:root[data-theme="dark"] :is(input, select, textarea) { color: var(--theme-text); background-color: var(--theme-surface); }
+:root[data-theme="dark"] :is(input, textarea)::placeholder { color: #a7b9cd; opacity: 1; }
+:root[data-theme="dark"] a { color: var(--theme-link); }
+:root[data-theme="dark"] :is(.language-selector, .restricted-access, .language-option.is-active, .language-option:hover, .language-code) { color: var(--theme-text); }
+:root[data-theme="dark"] .language-icon { color: var(--theme-link); }
+:root[data-theme="dark"] .input-container input { background: transparent; }
+:root[data-theme="dark"] .login-submit { color: #001d39; }
+:root[data-theme="dark"] .recovery-card { background: var(--theme-surface); }
+:root[data-theme="dark"] .recovery-panel { background: #0c1827; }
+/* Keep the institutional photo, navy sidebar and button contrast intact. */
+:root[data-theme="dark"] :is(.auth-visual, .lw-sidebar, .lw-hero) { color: #fff; }
+:root[data-theme="dark"] :is(.account-primary, .lw-coming button) { color: #fff; }
+:root[data-theme="dark"] .lw-sidebar a { color: #fff; }
+:root[data-theme="dark"] :focus-visible { outline-color: #8dc5ff; }
+@media (max-width: 560px) {
+  .auth-preferences { gap: 8px; justify-content: center; align-self: center; }
+  .lw-top-actions { gap: 8px; }
+}
+@media print {
+  .theme-toggle { display: none; }
+}

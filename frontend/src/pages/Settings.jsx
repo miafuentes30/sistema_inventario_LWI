@@ -1,3 +1,4 @@
+import { useTheme } from "../context/ThemeContext";
 import { useEffect, useState } from "react";
 import {
   Settings as SettingsIcon,
@@ -20,7 +21,8 @@ import { api } from "../services/api";
 import { useCopy, Notice, Status } from "../components/AccountUI";
 import logo from "../assets/images/living-water-logo.png";
 export default function Settings() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const { token } = useAuth();
   const c = useCopy();
   const [tab, setTab] = useState("general");
@@ -243,6 +245,17 @@ export default function Settings() {
                   </span>
                 </section>
               </div>
+            ) : tab === "appearance" ? (
+              <section className="lw-panel account-form theme-settings">
+                <h2>{t("themeTitle")}</h2>
+                <p>{t("themeDescription")}</p>
+                <label>{t("themeTitle")}
+                  <select value={theme} onChange={event => setTheme(event.target.value)}>
+                    <option value="light">{t("themeLight")}</option>
+                    <option value="dark">{t("themeDark")}</option>
+                  </select>
+                </label>
+              </section>
             ) : tab === "security" ? (
               <section className="lw-panel">
                 <h2>{c("Seguridad de la cuenta", "Account security")}</h2>

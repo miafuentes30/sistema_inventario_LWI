@@ -64,10 +64,11 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     const token = `x.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.x`;
-    await page.addInitScript(({ user, token }) => {
+    await page.addInitScript(({ user, token, theme }) => {
+      localStorage.setItem("lwi_theme", theme);
       if (!location.pathname.includes("login") && !location.pathname.includes("recuperar")) sessionStorage.setItem("lwi_session", JSON.stringify({ token, usuario: user }));
       else { sessionStorage.removeItem("lwi_session"); localStorage.removeItem("lwi_session"); }
-    }, { user, token });
+    }, { user, token, theme: process.env.LWI_RESPONSIVE_THEME || "light" });
     async function fits(label) {
       const size = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
       assert.ok(size.document <= size.viewport + 1, `${label}: page overflow ${JSON.stringify(size)}`);
@@ -88,12 +89,21 @@ test("Responsive browser matrix, keyboard navigation and dialogs without databas
         for (const path of ["/login", "/recuperar-contrasena", "/", "/inventario", "/inventario/1", "/proveedores", "/usuarios", "/configuracion", "/perfil", "/entradas", "/entradas/nueva", "/entradas/1", "/salidas", "/salidas/nueva", "/salidas/1"]) {
           await page.goto(origin + path);
           await page.locator("h1").first().waitFor();
+          if (path === "/configuracion") {
+            await page.locator("#tab-appearance").click();
+            const appearance = page.locator(".theme-settings select");
+            const initial = process.env.LWI_RESPONSIVE_THEME || "light";
+            await appearance.selectOption(initial === "dark" ? "light" : "dark");
+            assert.equal(await page.evaluate(() => localStorage.getItem("lwi_theme")), initial === "dark" ? "light" : "dark");
+            await appearance.selectOption(initial);
+          }
           if (path === "/inventario/1") {
             await page.locator(".pd-summary").waitFor();
             assert.ok((await page.locator(".pd-summary").textContent()).includes(product.name));
           }
           await page.evaluate(() => document.fonts.ready);
           await fits(`${language} ${width} ${path}`);
+          assert.equal(await page.locator("html").getAttribute("data-theme"), process.env.LWI_RESPONSIVE_THEME || "light");
           if (language === "fr" && [375,1366].includes(width)) await page.screenshot({ path: new URL(`${path.replaceAll("/", "_") || "home"}-fr-${width}.png`, output).pathname.replace(/^\/(\w:)/, "$1") });
         }
         await page.goto(origin + "/entradas/nueva");

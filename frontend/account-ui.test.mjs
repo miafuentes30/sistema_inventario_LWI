@@ -76,6 +76,7 @@ test("Login, rutas, usuarios, perfil, idioma y logout en DOM", async () => {
   const { LanguageProvider } = await vite.ssrLoadModule(
     "/src/context/LanguageContext.jsx",
   );
+  const { ThemeProvider } = await vite.ssrLoadModule("/src/context/ThemeContext.jsx");
   let root = createRoot(document.getElementById("root"));
   let createdId;
   const email = `ui-${randomUUID()}@water.cc`;
@@ -118,7 +119,7 @@ test("Login, rutas, usuarios, perfil, idioma y logout en DOM", async () => {
   };
   try {
     await act(async () => {
-      const appElement = React.createElement(App);
+      const appElement = React.createElement(ThemeProvider, null, React.createElement(App));
       const languageElement = React.createElement(
         LanguageProvider,
         null,
@@ -228,7 +229,7 @@ test("Login, rutas, usuarios, perfil, idioma y logout en DOM", async () => {
             React.createElement(
               LanguageProvider,
               null,
-              React.createElement(App),
+              React.createElement(ThemeProvider, null, React.createElement(App)),
             ),
           ),
         ),
