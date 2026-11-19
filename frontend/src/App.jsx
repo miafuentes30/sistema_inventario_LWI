@@ -17,7 +17,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      {["/usuarios", "/configuracion", "/perfil", "/inventario", "/inventario/:id", "/proveedores"].map((path) => (
+      {["/usuarios", "/configuracion", "/perfil", "/inventario", "/inventario/:id", "/proveedores", "/entradas", "/entradas/nueva", "/entradas/:movementId", "/salidas", "/salidas/nueva", "/salidas/:movementId"].map((path) => (
         <Route
           key={path}
           path={path}

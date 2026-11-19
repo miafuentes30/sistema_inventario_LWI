@@ -1,6 +1,7 @@
 import { useCopy } from "../components/AccountUI";
 import Catalog from "./Catalog";
 import ProductDetail from "./ProductDetail";
+import MovementsPage from "./Movements";
 import SystemSearch from "../components/SystemSearch";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LockKeyhole, UserRound } from "lucide-react";
@@ -120,7 +121,7 @@ export default function Home() {
     "/configuracion": "settings",
     "/perfil": "profile"
   };
-  const selected = location.pathname.startsWith("/inventario/") ? "productDetail" : pathKeys[location.pathname] || localSelected;
+  const selected = location.pathname.startsWith("/entradas") ? "entries" : location.pathname.startsWith("/salidas") ? "exits" : location.pathname.startsWith("/inventario/") ? "productDetail" : pathKeys[location.pathname] || localSelected;
   const admin = usuario?.rol?.nombre === "Administrador";
   const visibleItems = items.filter(i => admin || !["users", "settings"].includes(i.key));
   const profileRef = useRef(null);
@@ -193,6 +194,8 @@ export default function Home() {
   const greeting = c(hour < 12 ? "¡Buenos días" : hour < 19 ? "¡Buenas tardes" : "¡Buenas noches", hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening");
   const navigate = key => {
     const routes = {
+      entries: "/entradas",
+      exits: "/salidas",
       inventory: "/inventario",
       suppliers: "/proveedores",
       users: "/usuarios",
@@ -253,7 +256,7 @@ export default function Home() {
           </button>
         </div>
         <nav className="lw-nav" aria-label={c("Menú principal", "Main menu")}>
-          {visibleItems.map(i => <button key={i.key} type="button" className={`lw-nav-item ${selected === i.key ? "active" : ""}`} onClick={() => navigate(i.key)} title={t(i)}>
+          {visibleItems.map(i => <button key={i.key} type="button" className={`lw-nav-item ${selected === i.key || selected === "productDetail" && i.key === "inventory" ? "active" : ""}`} onClick={() => navigate(i.key)} title={t(i)}>
               <i.icon size={21} strokeWidth={2.4} />
               <span>{t(i)}</span>
             </button>)}
@@ -326,7 +329,7 @@ export default function Home() {
             </div>
           </div>
         </header>
-        {selected === "inventory" ? <Catalog key="inventory" /> : selected === "suppliers" ? <Catalog key="suppliers" suppliers /> : selected === "productDetail" ? <ProductDetail /> : selected === "users" ? admin ? <UsersPage /> : <main className="lw-content account-page">
+        {selected === "entries" || selected === "exits" ? <MovementsPage key={selected}/> : selected === "inventory" ? <Catalog key="inventory" /> : selected === "suppliers" ? <Catalog key="suppliers" suppliers /> : selected === "productDetail" ? <ProductDetail /> : selected === "users" ? admin ? <UsersPage /> : <main className="lw-content account-page">
               <h1>{c("Acceso restringido", "Access denied")}</h1>
             </main> : selected === "settings" ? admin ? <SettingsPage /> : <main className="lw-content account-page">
               <h1>{c("Acceso restringido", "Access denied")}</h1>
