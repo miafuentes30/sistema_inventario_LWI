@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Plus, Eye, Pencil, Power, Home, Download, ChevronDown, Package, Database, TriangleAlert, CircleX, MapPin, Search, Filter, Users, UserRound, Building, Building2, Tags } from "lucide-react";
 import { Modal } from "../components/AccountUI";
 import { CatalogFeedback, ProductFields, SupplierFields } from "../components/CatalogForms";
@@ -17,6 +17,7 @@ export default function Catalog({ suppliers = false }) {
   const { token, usuario } = useAuth();
   const canWrite = usuario?.rol?.nombre === "Administrador";
   const location = useLocation();
+  const navigate = useNavigate();
   const [data, setData] = useState(emptyData), [catalogs, setCatalogs] = useState({});
   const [filters, setFilters] = useState(initialFilters), [query, setQuery] = useState(initialFilters);
   const [page, setPage] = useState(1), [pageSize, setPageSize] = useState(10), [revision, setRevision] = useState(0);
@@ -40,6 +41,13 @@ export default function Catalog({ suppliers = false }) {
     return () => { active = false; };
   }, [suppliers, token, query, page, pageSize, revision]);
   useEffect(() => { if (!suppliers && location.hash === "#nuevo" && canWrite) open("create"); }, [location.hash, suppliers, canWrite]);
+  useEffect(() => {
+    const id = location.state?.editProductId;
+    if (!suppliers && canWrite && id) {
+      navigate(location.pathname + location.search + location.hash, { replace: true, state: null });
+      open("edit", { id });
+    }
+  }, [location.state, suppliers, canWrite]);
   async function open(mode, record) {
     setModalFailed(false); setModalLoading(false);
     setFormError(null); setNotice(""); setProvideBank(false); setForm(suppliers ? emptySupplier : emptyProduct); setModal({ mode, record });

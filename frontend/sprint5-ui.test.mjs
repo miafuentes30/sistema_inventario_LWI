@@ -106,8 +106,8 @@ test("React -> real HTTP -> isolated PostgreSQL: supplier, brands, product, relo
     await until(() => !document.querySelector("dialog") && document.querySelector("tbody")?.textContent.includes(tag + " Product"));
     const product = await prisma.producto.findUnique({ where: { codigo: tag + "_P" } }); assert.equal(product.marcaId, brand.id);
     await route(`/inventario/${product.id}`);
-    await until(() => document.querySelector("dl")?.textContent.includes(tag + " Product"));
-    assert.ok(document.querySelector("dl").textContent.includes(tag + " Brand"));
+    await until(() => document.querySelector(".pd-summary")?.textContent.includes(tag + " Product"));
+    assert.ok(document.querySelector(".pd-information-grid").textContent.includes(tag + " Brand"));
     assert.ok(document.querySelector("main").textContent.includes(fr.stockPending));
     assert.ok(writes.some(call => call.path === "/api/productos" && call.method === "POST"));
     assert.ok(writes.some(call => call.path === "/api/proveedores" && call.method === "POST"));

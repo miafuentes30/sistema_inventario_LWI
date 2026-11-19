@@ -121,8 +121,8 @@ test("DOM navigation, dynamic forms, languages, detail and existing screens; no 
       assert.equal(document.querySelector('[role="status"]').textContent, t.saved);
       await route("/inventario/test-unconnected");
       assert.equal(document.querySelector("main h1").textContent, t.detail);
-      assert.equal(document.querySelectorAll("dd").length, 11);
-      assert.ok([...document.querySelectorAll("dd")].every(el => el.textContent === "\u2014"));
+      assert.equal(document.querySelector(".pd-overview"), null);
+      assert.ok(document.querySelector('[role="alert"]'));
       await route("/proveedores");
     }
     await route("/");
