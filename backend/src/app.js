@@ -26,6 +26,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api", require("./modules/inventory/inventory.routes").inventoryRouter);
+app.use("/api", require("./modules/movements/movements.routes").movementsRouter);
 app.use("/api/usuarios", require("./modules/users/users.routes").usersRouter);
 app.use(
   "/api/perfil",
